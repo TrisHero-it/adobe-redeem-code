@@ -78,7 +78,10 @@ app.post('/api/run', async (req, res) => {
     products,
     onProgress: (evt) => {
       if (evt.type === 'start') job.total = evt.total;
-      else if (evt.type === 'row') job.current = { rowNumber: evt.rowNumber, purl: evt.purl };
+      else if (evt.type === 'row') job.current = { rowNumber: evt.rowNumber, purl: evt.purl, got: 0, need: null, round: 0 };
+      else if (evt.type === 'row-progress' && job.current) {
+        job.current.got = evt.got; job.current.need = evt.need; job.current.round = evt.round;
+      }
       else if (evt.type === 'row-done') job.done = evt.done;
       else if (evt.type === 'log') pushLog(evt.msg);
     },
