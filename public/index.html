@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quản lý Adobe Partner Offer</title>
+<style>
+  :root {
+    --bg:#0f1115; --panel:#181b22; --border:#2a2f3a; --text:#e6e8ee; --muted:#9aa4b2;
+    --accent:#e34f26; --ok:#3fb950; --warn:#d29922; --err:#f85149; --chip:#232833;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:18px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; }
+  header .adobe { background:var(--accent); color:#fff; border-radius:6px; padding:4px 8px; font-weight:700; font-size:13px; }
+  a { color:#58a6ff; }
+  main { padding:20px 24px; max-width:1100px; margin:0 auto; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:18px; }
+  .row-controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  button { font:inherit; cursor:pointer; border:none; border-radius:8px; padding:10px 16px; font-weight:600; }
+  button.primary { background:var(--accent); color:#fff; }
+  button.ghost { background:var(--chip); color:var(--text); border:1px solid var(--border); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  label.toggle { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:14px; }
+  .status { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  .badge { padding:4px 10px; border-radius:20px; font-size:13px; font-weight:600; }
+  .badge.idle{background:#30363d;color:#c9d1d9;} .badge.running{background:#1f6feb;color:#fff;}
+  .badge.done{background:var(--ok);color:#04260f;} .badge.error{background:var(--err);color:#fff;}
+  .bar { height:8px; background:#30363d; border-radius:6px; overflow:hidden; flex:1; min-width:160px; }
+  .bar > div { height:100%; background:var(--accent); width:0%; transition:width .3s; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  .cols th { font-size:12px; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; }
+  .dot.on{background:var(--ok);} .dot.off{background:#484f58;}
+  .code { font-family:ui-monospace,Consolas,monospace; font-size:11.5px; color:#c9d1d9; word-break:break-all; }
+  .code.empty { color:#484f58; font-style:italic; }
+  .purl { font-family:ui-monospace,Consolas,monospace; font-size:12px; color:#8b949e; }
+  .log { background:#0b0d11; border:1px solid var(--border); border-radius:8px; padding:12px; height:220px; overflow:auto;
+         font-family:ui-monospace,Consolas,monospace; font-size:12px; white-space:pre-wrap; color:#b9c0cc; }
+  h2 { font-size:15px; margin:0 0 12px; }
+  .muted { color:var(--muted); font-size:13px; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:8px; }
+  .legend span { color:var(--muted); font-size:12px; }
+  .picker { display:flex; gap:10px; flex-wrap:wrap; }
+  .picker label { display:flex; align-items:center; gap:8px; background:var(--chip); border:1px solid var(--border);
+    border-radius:8px; padding:8px 12px; cursor:pointer; font-size:14px; user-select:none; }
+  .picker label:has(input:checked) { border-color:var(--accent); background:#2a1f1b; }
+  .picker .col { color:var(--muted); font-size:11px; }
+  button.small { padding:6px 10px; font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <span class="adobe">Adobe</span>
+  <h1>Quản lý Partner Offer — lấy code redeem</h1>
+</header>
+<main>
+
+  <div class="card">
+    <h2>Chọn code muốn lấy</h2>
+    <div id="productPicker" class="picker"></div>
+    <div class="row-controls" style="margin-top:8px;">
+      <button id="pickAll" class="ghost small">Chọn tất cả</button>
+      <button id="pickNone" class="ghost small">Bỏ chọn</button>
+      <span id="pickCount" class="muted"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Điều khiển</h2>
+    <div class="row-controls">
+      <button id="btnEmpty" class="primary">▶ Chạy (chỉ ô trống)</button>
+      <button id="btnAll" class="ghost">↻ Chạy lại (ghi đè ô đã chọn)</button>
+      <label class="toggle"><input type="checkbox" id="showBrowser" /> Hiện trình duyệt</label>
+      <button id="btnRefresh" class="ghost">⟳ Tải lại bảng</button>
+    </div>
+    <p class="muted" style="margin-top:8px;">Chỉ các cột được tích mới bị ghi; cột không chọn giữ nguyên.</p>
+    <div class="status" style="margin-top:14px;">
+      <span id="badge" class="badge idle">idle</span>
+      <div class="bar"><div id="progress"></div></div>
+      <span id="progressText" class="muted">—</span>
+    </div>
+    <div id="currentRow" class="muted" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Sẽ lấy những code gì</h2>
+    <p class="muted" id="colsInfo">Mỗi link lấy tối đa 5 code, ghi cố định vào các cột:</p>
+    <div class="legend" id="legend"></div>
+    <p class="muted" style="margin-top:10px;">
+      Google Sheet: <a id="sheetLink" href="#" target="_blank">mở sheet</a> — tab <code id="tabName"></code>.
+      Dán link partner mới vào <b>cột A</b> rồi bấm “Chạy (chỉ hàng trống)”.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Danh sách link &amp; code hiện có</h2>
+    <div style="overflow:auto;">
+      <table>
+        <thead>
+          <tr class="cols" id="tableHead"></tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="7" class="muted">Đang tải…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Log</h2>
+    <div id="log" class="log"></div>
+  </div>
+
+</main>
+<script>
+let COLUMNS = [];
+let PRODUCT_IDS = [];
+const $ = (id) => document.getElementById(id);
+const STORE_KEY = 'adobe_selected_products';
+
+async function loadInfo() {
+  const r = await fetch('/api/info').then(x=>x.json());
+  COLUMNS = r.columns;
+  PRODUCT_IDS = r.productIds;
+  $('sheetLink').href = r.sheetUrl;
+  $('tabName').textContent = r.tab;
+  // legend
+  $('legend').innerHTML = r.columns.map((c,i)=>
+    `<span><b style="color:#e6e8ee">Cột ${String.fromCharCode(66+i)}</b> — ${c}</span>`).join('');
+  // table head
+  $('tableHead').innerHTML = '<th>#</th><th>Link partner (cột A)</th>' +
+    r.columns.map((c,i)=>`<th>${String.fromCharCode(66+i)}<br>${c}</th>`).join('');
+  // product picker (checkbox)
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY)); } catch {}
+  $('productPicker').innerHTML = r.productIds.map((pid,i)=>{
+    const checked = !saved || saved.includes(pid) ? 'checked' : '';
+    return `<label><input type="checkbox" class="prod" value="${pid}" ${checked}/>
+      <span>${r.columns[i]}</span><span class="col">Cột ${String.fromCharCode(66+i)}</span></label>`;
+  }).join('');
+  document.querySelectorAll('.prod').forEach(c => c.addEventListener('change', onPickChange));
+  updatePickCount();
+}
+
+function getSelected() {
+  return [...document.querySelectorAll('.prod:checked')].map(c => c.value);
+}
+function onPickChange() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(getSelected())); } catch {}
+  updatePickCount();
+}
+function updatePickCount() {
+  const n = getSelected().length;
+  $('pickCount').textContent = `Đang chọn ${n}/${PRODUCT_IDS.length} sản phẩm`;
+  const none = n === 0;
+  $('btnEmpty').disabled = none; $('btnAll').disabled = none;
+}
+
+async function loadRows() {
+  try {
+    const { rows } = await fetch('/api/rows').then(x=>x.json());
+    if (!rows || !rows.length) { $('tableBody').innerHTML = '<tr><td colspan="7" class="muted">Chưa có link nào ở cột A.</td></tr>'; return; }
+    $('tableBody').innerHTML = rows.map(row => {
+      const cells = row.codes.map(code => code
+        ? `<td><span class="dot on"></span><span class="code">${code}</span></td>`
+        : `<td><span class="dot off"></span><span class="code empty">(trống)</span></td>`).join('');
+      return `<tr>
+        <td>${row.rowNumber}<br><span class="muted">${row.filled}/5</span></td>
+        <td class="purl">${row.purl}</td>
+        ${cells}
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    $('tableBody').innerHTML = `<tr><td colspan="7" style="color:var(--err)">Lỗi tải bảng: ${e.message}</td></tr>`;
+  }
+}
+
+let polling = null;
+async function poll() {
+  const s = await fetch('/api/status').then(x=>x.json());
+  const badge = $('badge');
+  badge.className = 'badge ' + s.state;
+  badge.textContent = { idle:'chưa chạy', running:'đang chạy', done:'xong', error:'lỗi' }[s.state] || s.state;
+  const pct = s.total ? Math.round(s.done / s.total * 100) : (s.state==='done'?100:0);
+  $('progress').style.width = pct + '%';
+  $('progressText').textContent = s.total ? `${s.done}/${s.total} link (${pct}%)` : '—';
+  $('currentRow').textContent = s.current ? `Đang xử lý hàng ${s.current.rowNumber}: ${s.current.purl}` : '';
+  $('log').textContent = (s.logs||[]).join('\n');
+  $('log').scrollTop = $('log').scrollHeight;
+
+  const running = s.state === 'running';
+  const none = getSelected().length === 0;
+  $('btnEmpty').disabled = running || none;
+  $('btnAll').disabled = running || none;
+
+  if (running && !polling) polling = setInterval(poll, 1200);
+  if (!running && polling) { clearInterval(polling); polling = null; loadRows(); }
+}
+
+async function run(all) {
+  const products = getSelected();
+  if (!products.length) { alert('Hãy tích chọn ít nhất 1 sản phẩm.'); return; }
+  const headless = !$('showBrowser').checked;
+  const r = await fetch('/api/run', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ all, headless, products })
+  });
+  if (r.status === 409) { alert('Tool đang chạy rồi.'); return; }
+  if (r.status === 400) { alert((await r.json()).error || 'Lỗi.'); return; }
+  if (!polling) polling = setInterval(poll, 1200);
+  poll();
+}
+
+function setAllChecks(v) {
+  document.querySelectorAll('.prod').forEach(c => { c.checked = v; });
+  onPickChange();
+}
+
+$('btnEmpty').onclick = () => run(false);
+$('btnAll').onclick = () => {
+  const names = getSelected().map(pid => COLUMNS[PRODUCT_IDS.indexOf(pid)]).join(', ');
+  if (confirm('Ghi đè code mới cho các cột đã chọn (' + names + ') ở mọi hàng?')) run(true);
+};
+$('btnRefresh').onclick = loadRows;
+$('pickAll').onclick = () => setAllChecks(true);
+$('pickNone').onclick = () => setAllChecks(false);
+
+(async () => { await loadInfo(); await loadRows(); await poll(); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Secrets — KHÔNG đẩy lên
+credentials.json
+*.credentials.json
+.env
+
+# Dependencies
+node_modules/
+
+# Output / logs / artifacts
+output/
+.playwright-mcp/
+*.log
