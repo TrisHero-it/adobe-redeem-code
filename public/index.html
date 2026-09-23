@@ -21,12 +21,14 @@
   button { font:inherit; cursor:pointer; border:none; border-radius:8px; padding:10px 16px; font-weight:600; }
   button.primary { background:var(--accent); color:#fff; }
   button.ghost { background:var(--chip); color:var(--text); border:1px solid var(--border); }
+  button.danger { background:var(--err); color:#fff; }
   button:disabled { opacity:.5; cursor:not-allowed; }
   label.toggle { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:14px; }
   .status { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
   .badge { padding:4px 10px; border-radius:20px; font-size:13px; font-weight:600; }
   .badge.idle{background:#30363d;color:#c9d1d9;} .badge.running{background:#1f6feb;color:#fff;}
   .badge.done{background:var(--ok);color:#04260f;} .badge.error{background:var(--err);color:#fff;}
+  .badge.stopped{background:var(--warn);color:#3a2a04;}
   .bar { height:8px; background:#30363d; border-radius:6px; overflow:hidden; flex:1; min-width:160px; }
   .bar > div { height:100%; background:var(--accent); width:0%; transition:width .3s; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -50,6 +52,8 @@
   .picker label:has(input:checked) { border-color:var(--accent); background:#2a1f1b; }
   .picker .col { color:var(--muted); font-size:11px; }
   button.small { padding:6px 10px; font-size:13px; }
+  input[type=number] { background:#0b0d11; color:var(--text); border:1px solid var(--border);
+    border-radius:6px; padding:6px 8px; font:inherit; }
 </style>
 </head>
 <body>
@@ -74,8 +78,14 @@
     <div class="row-controls">
       <button id="btnEmpty" class="primary">▶ Chạy (chỉ ô trống)</button>
       <button id="btnAll" class="ghost">↻ Chạy lại (ghi đè ô đã chọn)</button>
+      <button id="btnStop" class="danger" disabled>⏹ Dừng</button>
       <label class="toggle"><input type="checkbox" id="showBrowser" /> Hiện trình duyệt</label>
-      <button id="btnRefresh" class="ghost">⟳ Tải lại bảng</button>
+    </div>
+    <div class="row-controls" style="margin-top:10px;">
+      <label class="toggle" style="color:var(--text)">Số lượng link cần chạy:
+        <input type="number" id="limit" min="1" placeholder="tất cả" style="width:110px;" />
+      </label>
+      <span class="muted">Để trống = chạy tất cả link thỏa điều kiện.</span>
     </div>
     <p class="muted" style="margin-top:8px;">Chỉ các cột được tích mới bị ghi; cột không chọn giữ nguyên.
     Tool sẽ <b>lấy bằng được</b> đủ các mã đã chọn — gặp lỗi/timeout thì tự nghỉ rồi thử lại.</p>
@@ -95,20 +105,6 @@
       Google Sheet: <a id="sheetLink" href="#" target="_blank">mở sheet</a> — tab <code id="tabName"></code>.
       Dán link partner mới vào <b>cột A</b> rồi bấm “Chạy (chỉ hàng trống)”.
     </p>
-  </div>
-
-  <div class="card">
-    <h2>Danh sách link &amp; code hiện có</h2>
-    <div style="overflow:auto;">
-      <table>
-        <thead>
-          <tr class="cols" id="tableHead"></tr>
-        </thead>
-        <tbody id="tableBody">
-          <tr><td colspan="7" class="muted">Đang tải…</td></tr>
-        </tbody>
-      </table>
-    </div>
   </div>
 
   <div class="card">
@@ -132,9 +128,6 @@ async function loadInfo() {
   // legend
   $('legend').innerHTML = r.columns.map((c,i)=>
     `<span><b style="color:#e6e8ee">Cột ${String.fromCharCode(66+i)}</b> — ${c}</span>`).join('');
-  // table head
-  $('tableHead').innerHTML = '<th>#</th><th>Link partner (cột A)</th>' +
-    r.columns.map((c,i)=>`<th>${String.fromCharCode(66+i)}<br>${c}</th>`).join('');
   // product picker (checkbox)
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(STORE_KEY)); } catch {}
@@ -161,31 +154,12 @@ function updatePickCount() {
   $('btnEmpty').disabled = none; $('btnAll').disabled = none;
 }
 
-async function loadRows() {
-  try {
-    const { rows } = await fetch('/api/rows').then(x=>x.json());
-    if (!rows || !rows.length) { $('tableBody').innerHTML = '<tr><td colspan="7" class="muted">Chưa có link nào ở cột A.</td></tr>'; return; }
-    $('tableBody').innerHTML = rows.map(row => {
-      const cells = row.codes.map(code => code
-        ? `<td><span class="dot on"></span><span class="code">${code}</span></td>`
-        : `<td><span class="dot off"></span><span class="code empty">(trống)</span></td>`).join('');
-      return `<tr>
-        <td>${row.rowNumber}<br><span class="muted">${row.filled}/5</span></td>
-        <td class="purl">${row.purl}</td>
-        ${cells}
-      </tr>`;
-    }).join('');
-  } catch (e) {
-    $('tableBody').innerHTML = `<tr><td colspan="7" style="color:var(--err)">Lỗi tải bảng: ${e.message}</td></tr>`;
-  }
-}
-
 let polling = null;
 async function poll() {
   const s = await fetch('/api/status').then(x=>x.json());
   const badge = $('badge');
   badge.className = 'badge ' + s.state;
-  badge.textContent = { idle:'chưa chạy', running:'đang chạy', done:'xong', error:'lỗi' }[s.state] || s.state;
+  badge.textContent = { idle:'chưa chạy', running:'đang chạy', done:'xong', stopped:'đã dừng', error:'lỗi' }[s.state] || s.state;
   const pct = s.total ? Math.round(s.done / s.total * 100) : (s.state==='done'?100:0);
   $('progress').style.width = pct + '%';
   $('progressText').textContent = s.total ? `${s.done}/${s.total} link (${pct}%)` : '—';
@@ -201,9 +175,12 @@ async function poll() {
   const none = getSelected().length === 0;
   $('btnEmpty').disabled = running || none;
   $('btnAll').disabled = running || none;
+  $('btnStop').disabled = !running || s.stopRequested;
+  if (running && s.stopRequested) $('btnStop').textContent = '⏹ Đang dừng...';
+  else $('btnStop').textContent = '⏹ Dừng';
 
   if (running && !polling) polling = setInterval(poll, 1200);
-  if (!running && polling) { clearInterval(polling); polling = null; loadRows(); }
+  if (!running && polling) { clearInterval(polling); polling = null; }
 }
 
 async function run(all) {
@@ -212,7 +189,7 @@ async function run(all) {
   const headless = !$('showBrowser').checked;
   const r = await fetch('/api/run', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ all, headless, products })
+    body: JSON.stringify({ all, headless, products, limit: Number($('limit').value) || 0 })
   });
   if (r.status === 409) { alert('Tool đang chạy rồi.'); return; }
   if (r.status === 400) { alert((await r.json()).error || 'Lỗi.'); return; }
@@ -230,11 +207,17 @@ $('btnAll').onclick = () => {
   const names = getSelected().map(pid => COLUMNS[PRODUCT_IDS.indexOf(pid)]).join(', ');
   if (confirm('Ghi đè code mới cho các cột đã chọn (' + names + ') ở mọi hàng?')) run(true);
 };
-$('btnRefresh').onclick = loadRows;
 $('pickAll').onclick = () => setAllChecks(true);
 $('pickNone').onclick = () => setAllChecks(false);
+$('btnStop').onclick = async () => {
+  if (!confirm('Dừng tool? Tiến trình sẽ kết thúc sau khi xong thao tác hiện tại (các mã đã lấy vẫn được giữ).')) return;
+  $('btnStop').disabled = true; $('btnStop').textContent = '⏹ Đang dừng...';
+  const r = await fetch('/api/stop', { method:'POST' });
+  if (r.status === 409) alert((await r.json()).error || 'Không có gì để dừng.');
+  poll();
+};
 
-(async () => { await loadInfo(); await loadRows(); await poll(); })();
+(async () => { await loadInfo(); await poll(); })();
 </script>
 </body>
 </html>

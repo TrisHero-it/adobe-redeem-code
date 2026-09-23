@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 // Trạng thái công việc trong bộ nhớ
 const job = {
-  state: 'idle', // idle | running | done | error
+  state: 'idle', // idle | running | done | stopped | error
   all: false,
   total: 0,
   done: 0,
@@ -23,6 +23,7 @@ const job = {
   startedAt: null,
   finishedAt: null,
   error: null,
+  stopRequested: false,
 };
 function pushLog(msg) {
   const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
@@ -62,13 +63,14 @@ app.post('/api/run', async (req, res) => {
   let products = req.body && Array.isArray(req.body.products) ? req.body.products.map(String) : COL_ORDER.slice();
   products = products.filter((p) => COL_ORDER.includes(p));
   if (!products.length) return res.status(400).json({ error: 'Chưa chọn sản phẩm nào.' });
+  const limit = req.body && Number(req.body.limit) > 0 ? Math.floor(Number(req.body.limit)) : 0;
 
   Object.assign(job, {
     state: 'running', all, products, total: 0, done: 0, current: null,
-    logs: [], startedAt: Date.now(), finishedAt: null, error: null,
+    logs: [], startedAt: Date.now(), finishedAt: null, error: null, stopRequested: false,
   });
   const names = products.map((p) => HEADERS[COL_ORDER.indexOf(p)]).join(', ');
-  pushLog(`Bắt đầu quét (${all ? 'quét lại' : 'ô trống'}, ${headless ? 'ẩn' : 'hiện'} trình duyệt).`);
+  pushLog(`Bắt đầu quét (${all ? 'quét lại' : 'ô trống'}, ${headless ? 'ẩn' : 'hiện'} trình duyệt${limit ? `, giới hạn ${limit} link` : ''}).`);
   pushLog(`Sản phẩm: ${names}`);
   res.json({ ok: true });
 
@@ -76,6 +78,8 @@ app.post('/api/run', async (req, res) => {
     all,
     headless,
     products,
+    limit,
+    shouldStop: () => job.stopRequested,
     onProgress: (evt) => {
       if (evt.type === 'start') job.total = evt.total;
       else if (evt.type === 'row') job.current = { rowNumber: evt.rowNumber, purl: evt.purl, got: 0, need: null, round: 0 };
@@ -87,10 +91,10 @@ app.post('/api/run', async (req, res) => {
     },
   })
     .then((r) => {
-      job.state = 'done';
+      job.state = r.stopped ? 'stopped' : 'done';
       job.current = null;
       job.finishedAt = Date.now();
-      pushLog(`Hoàn tất. Đã xử lý ${r.done} hàng.`);
+      pushLog(r.stopped ? `Đã dừng. Đã xử lý ${r.done} hàng.` : `Hoàn tất. Đã xử lý ${r.done} hàng.`);
     })
     .catch((e) => {
       job.state = 'error';
@@ -98,6 +102,14 @@ app.post('/api/run', async (req, res) => {
       job.finishedAt = Date.now();
       pushLog(`LỖI: ${e.message}`);
     });
+});
+
+// Dừng tool
+app.post('/api/stop', (req, res) => {
+  if (job.state !== 'running') return res.status(409).json({ error: 'Không có tiến trình đang chạy.' });
+  job.stopRequested = true;
+  pushLog('⏹ Nhận yêu cầu DỪNG — đang kết thúc an toàn...');
+  res.json({ ok: true });
 });
 
 app.listen(PORT, () => {
