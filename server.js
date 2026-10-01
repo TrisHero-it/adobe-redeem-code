@@ -4,13 +4,13 @@
  */
 const express = require('express');
 const path = require('path');
-const { readRows, runScan, HEADERS, COL_ORDER, SPREADSHEET_ID, TAB } = require('./lib/core');
+const { runScan, addLinks, HEADERS, COL_ORDER, SPREADSHEET_ID, TAB } = require('./lib/core');
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Trạng thái công việc trong bộ nhớ
 const job = {
@@ -42,11 +42,11 @@ app.get('/api/info', (req, res) => {
   });
 });
 
-// Danh sách link + code hiện có trong sheet
-app.get('/api/rows', async (req, res) => {
+// Thêm link mới vào cột A của sheet
+app.post('/api/add-links', async (req, res) => {
   try {
-    const rows = await readRows();
-    res.json({ rows });
+    const r = await addLinks(req.body && req.body.text);
+    res.json(r);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -112,6 +112,7 @@ app.post('/api/stop', (req, res) => {
   res.json({ ok: true });
 });
 
-app.listen(PORT, () => {
+// Chỉ lắng nghe trên localhost để không lộ ra mạng LAN
+app.listen(PORT, '127.0.0.1', () => {
   console.log(`\n  Trang quản lý: http://localhost:${PORT}\n`);
 });

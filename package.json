@@ -10,7 +10,8 @@
     "start": "node server.js",
     "server": "node server.js",
     "scan": "node process-sheet.js",
-    "scan:all": "node process-sheet.js --all --headless"
+    "scan:all": "node process-sheet.js --all --headless",
+    "test": "node test/core.test.js"
   },
   "dependencies": {
     "express": "^5.2.1",

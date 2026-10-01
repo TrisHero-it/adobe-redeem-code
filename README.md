@@ -15,21 +15,27 @@ Tạo file `credentials.json` (service account của Google, xem `credentials.ex
 ## Trang quản lý (khuyên dùng)
 
 ```bash
-npm start          # mở http://localhost:3000
+npm start          # mở http://localhost:3001 (chỉ localhost)
 ```
 
+- **Thêm link mới vào sheet**: dán link (mỗi dòng một link) → tự thêm vào cột A, bỏ trùng. Khỏi mở Google Sheets.
 - **Chọn code muốn lấy**: tích các sản phẩm cần (Creative Cloud Pro, Substance 3D, Acrobat Standard, Photography 1TB, Stock).
+- **Số lượng link cần chạy**: để trống = tất cả, điền N = chỉ chạy N link đầu.
 - **▶ Chạy (chỉ ô trống)**: chỉ điền ô trống của các cột đã chọn.
 - **↻ Chạy lại (ghi đè)**: làm mới code cho các cột đã chọn.
-- Trạng thái + log cập nhật trực tiếp; bảng hiển thị link & code hiện có.
+- **⏹ Dừng**: ngắt an toàn giữa chừng, giữ các mã đã lấy.
+- Trạng thái + log cập nhật trực tiếp.
 
 ## Dùng bằng CLI
 
 ```bash
-node process-sheet.js            # điền code cho hàng còn trống
-node process-sheet.js --all      # quét lại & ghi đè tất cả
-node process-sheet.js --headless # chạy ẩn trình duyệt
-node scan-all.js <PURL>          # quét 1 link, in ra code
+node process-sheet.js                       # điền code cho hàng còn trống
+node process-sheet.js --all                 # quét lại & ghi đè tất cả
+node process-sheet.js --headless            # chạy ẩn trình duyệt
+node process-sheet.js --limit 10            # chỉ chạy 10 link đầu
+node process-sheet.js --products stock,creative   # chỉ lấy Stock + Creative Cloud Pro
+node scan-all.js <PURL>                      # quét 1 link, in ra code
+npm test                                     # chạy test
 ```
 
 ## Quy ước cột trong Google Sheet (tab `sheet1`)
@@ -45,7 +51,7 @@ node scan-all.js <PURL>          # quét 1 link, in ra code
 
 ## Ghi chú kỹ thuật
 
-- Trang Adobe **đảo thứ tự sản phẩm mỗi lần tải**, nên tool bấm nút theo `GetProductID(...)` chứ không theo vị trí.
+- Trang Adobe **đảo thứ tự sản phẩm mỗi lần tải** và **mỗi link có bộ ProductID riêng**, nên tool nhận diện sản phẩm theo **TÊN** cạnh nút (Stock/Creative Cloud/Substance/Acrobat/Photography), không theo vị trí hay ProductID.
 - Mỗi PURL thực chất chỉ **redeem được 1 sản phẩm**; các cột là để lựa chọn.
 - Nếu gặp `timeout` (bị giới hạn tần suất): đợi vài phút rồi chạy lại. Tool **không xoá** dữ liệu cũ khi quét hỏng.
 

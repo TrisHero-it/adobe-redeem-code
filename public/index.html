@@ -54,6 +54,8 @@
   button.small { padding:6px 10px; font-size:13px; }
   input[type=number] { background:#0b0d11; color:var(--text); border:1px solid var(--border);
     border-radius:6px; padding:6px 8px; font:inherit; }
+  textarea { background:#0b0d11; color:var(--text); border:1px solid var(--border);
+    border-radius:8px; padding:8px 10px; font:13px ui-monospace,Consolas,monospace; resize:vertical; }
 </style>
 </head>
 <body>
@@ -62,6 +64,16 @@
   <h1>Quản lý Partner Offer — lấy code redeem</h1>
 </header>
 <main>
+
+  <div class="card">
+    <h2>Thêm link mới vào sheet</h2>
+    <p class="muted">Dán một hoặc nhiều link (mỗi dòng một link) — tự thêm vào cột A, bỏ link trùng.</p>
+    <textarea id="newLinks" rows="3" placeholder="https://www.adobepartneroffer.com/..." style="width:100%;"></textarea>
+    <div class="row-controls" style="margin-top:8px;">
+      <button id="btnAddLinks" class="primary">➕ Thêm vào sheet</button>
+      <span id="addResult" class="muted"></span>
+    </div>
+  </div>
 
   <div class="card">
     <h2>Chọn code muốn lấy</h2>
@@ -117,7 +129,7 @@
 let COLUMNS = [];
 let PRODUCT_IDS = [];
 const $ = (id) => document.getElementById(id);
-const STORE_KEY = 'adobe_selected_products';
+const STORE_KEY = 'adobe_selected_products_v2';
 
 async function loadInfo() {
   const r = await fetch('/api/info').then(x=>x.json());
@@ -209,6 +221,22 @@ $('btnAll').onclick = () => {
 };
 $('pickAll').onclick = () => setAllChecks(true);
 $('pickNone').onclick = () => setAllChecks(false);
+$('btnAddLinks').onclick = async () => {
+  const text = $('newLinks').value.trim();
+  if (!text) { alert('Chưa dán link nào.'); return; }
+  $('btnAddLinks').disabled = true;
+  try {
+    const r = await fetch('/api/add-links', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text })
+    }).then(x=>x.json());
+    if (r.error) { $('addResult').textContent = 'Lỗi: ' + r.error; }
+    else {
+      $('addResult').textContent = `Đã thêm ${r.added} link mới` + (r.skipped?`, bỏ ${r.skipped} trùng`:'') + '.';
+      if (r.added) $('newLinks').value = '';
+    }
+  } catch (e) { $('addResult').textContent = 'Lỗi: ' + e.message; }
+  $('btnAddLinks').disabled = false;
+};
 $('btnStop').onclick = async () => {
   if (!confirm('Dừng tool? Tiến trình sẽ kết thúc sau khi xong thao tác hiện tại (các mã đã lấy vẫn được giữ).')) return;
   $('btnStop').disabled = true; $('btnStop').textContent = '⏹ Đang dừng...';
