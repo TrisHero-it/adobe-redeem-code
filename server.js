@@ -5,7 +5,7 @@
 const express = require('express');
 const path = require('path');
 const { HEADERS, COL_ORDER, SPREADSHEET_ID, TAB, addLinks } = require('./lib/core');
-const { importFromSheet, enqueue, Runner } = require('./lib/queue');
+const { importFromSheet, enqueue, Runner, parseProxies } = require('./lib/queue');
 const dbm = require('./lib/db');
 
 const app = express();
@@ -78,6 +78,7 @@ app.post('/api/run', async (req, res) => {
   const limit = Number(body.limit) > 0 ? Math.floor(Number(body.limit)) : 0;
   const concurrency = Math.max(1, Math.min(5, Number(body.concurrency) || 2));
   const headless = body.headless === false ? false : true;
+  const proxies = parseProxies(body.proxies);
 
   Object.assign(state, {
     phase: 'running', concurrency, logs: [], startedAt: Date.now(), finishedAt: null, error: null,
@@ -90,10 +91,10 @@ app.post('/api/run', async (req, res) => {
     const eq = enqueue({ products, all, limit });
     const names = products.map((p) => HEADERS[COL_ORDER.indexOf(p)]).join(', ');
     pushLog(`Tạo ${eq.jobs} job cho ${eq.links} link (${all ? 'quét lại' : 'ô trống'}${limit ? `, giới hạn ${limit}` : ''}).`);
-    pushLog(`Sản phẩm: ${names} | ${concurrency} luồng.`);
+    pushLog(`Sản phẩm: ${names} | ${concurrency} luồng | ${proxies.length ? proxies.length + ' proxy' : 'không proxy'}.`);
     if (eq.jobs === 0) { state.phase = 'done'; state.finishedAt = Date.now(); pushLog('Không có job nào cần chạy.'); return; }
 
-    runner = new Runner({ concurrency, headless, onLog: pushLog });
+    runner = new Runner({ concurrency, headless, onLog: pushLog, proxies });
     const r = await runner.start();
     state.phase = r.stopped ? 'stopped' : 'done';
     state.finishedAt = Date.now();

@@ -101,6 +101,12 @@
         <input type="number" id="concurrency" min="1" max="5" value="2" style="width:70px;" />
       </label>
     </div>
+    <div style="margin-top:10px;">
+      <label class="toggle" style="color:var(--text); display:block; margin-bottom:4px;">Proxy (mỗi dòng một proxy — mỗi luồng dùng 1 proxy, xoay vòng):</label>
+      <textarea id="proxies" rows="3" style="width:100%;"
+        placeholder="host:port&#10;host:port:user:pass&#10;user:pass@host:port&#10;socks5://host:port"></textarea>
+      <span class="muted">Để trống = chạy không proxy. Nên đặt số proxy ≥ số luồng để mỗi luồng một IP.</span>
+    </div>
     <p class="muted" style="margin-top:8px;">Chỉ các cột được tích mới bị ghi; cột không chọn giữ nguyên.
     Dùng <b>DB + hàng đợi</b>: lấy được mã nào lưu ngay (DB + Sheet), lỗi thì nghỉ & thử lại tới khi đủ.</p>
     <div class="status" style="margin-top:14px;">
@@ -209,6 +215,7 @@ async function run(all) {
       all, headless, products,
       limit: Number($('limit').value) || 0,
       concurrency: Number($('concurrency').value) || 2,
+      proxies: $('proxies').value,
     })
   });
   if (r.status === 409) { alert('Tool đang chạy rồi.'); return; }
@@ -252,6 +259,10 @@ $('btnStop').onclick = async () => {
   if (r.status === 409) alert((await r.json()).error || 'Không có gì để dừng.');
   poll();
 };
+
+// Nhớ danh sách proxy giữa các lần mở
+try { const sp = localStorage.getItem('adobe_proxies'); if (sp) $('proxies').value = sp; } catch {}
+$('proxies').addEventListener('change', () => { try { localStorage.setItem('adobe_proxies', $('proxies').value); } catch {} });
 
 (async () => { await loadInfo(); await poll(); })();
 </script>

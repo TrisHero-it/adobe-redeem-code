@@ -62,4 +62,17 @@ t('COL_ORDER khớp số sản phẩm', () => {
   assert.strictEqual(COL_ORDER.length, 5);
 });
 
+// --- parseProxies ---
+const { parseProxies } = require('../lib/queue');
+t('parse proxy đủ các định dạng', () => {
+  const out = parseProxies('1.2.3.4:8080\n5.6.7.8:3128:u:p\nadmin:secret@9.9.9.9:1080\nsocks5://10.0.0.1:1080\n  \nrac');
+  assert.strictEqual(out.length, 4, 'phải parse đúng 4 proxy hợp lệ');
+  assert.strictEqual(out[0].server, 'http://1.2.3.4:8080');
+  assert.strictEqual(out[1].username, 'u');
+  assert.strictEqual(out[1].password, 'p');
+  assert.strictEqual(out[2].server, 'http://9.9.9.9:1080');
+  assert.strictEqual(out[2].username, 'admin');
+  assert.strictEqual(out[3].server, 'socks5://10.0.0.1:1080');
+});
+
 console.log(`\n${pass} test PASS.`);

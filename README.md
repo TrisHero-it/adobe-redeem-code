@@ -54,6 +54,7 @@ npm test                                     # chạy test
 - **SQLite (`data.db`)** là nguồn chính: lưu `links`, `codes` (mã theo từng sản phẩm) và `jobs` (hàng đợi). File này nằm ngoài git.
 - Khi bấm Chạy: tool **đồng bộ Sheet → DB** (nạp link mới + code có sẵn), tạo **job** cho các (link, sản phẩm) cần lấy, rồi chạy **nhiều luồng song song** (2–5, chỉnh ở ô "Số luồng").
 - Mỗi luồng dùng một `browserContext` riêng để **không tráo mã** giữa các luồng.
+- **Proxy**: dán danh sách proxy (mỗi dòng một proxy) ở dashboard — mỗi luồng dùng 1 proxy (xoay vòng nếu ít hơn số luồng). Định dạng: `host:port`, `host:port:user:pass`, `user:pass@host:port`, hoặc `http://`/`socks5://...`. Nên đặt số proxy ≥ số luồng để mỗi luồng một IP, giảm bị giới hạn tần suất.
 - Lấy được mã nào **lưu ngay** vào DB **và** ghi ô tương ứng trên Google Sheet.
 - Job lỗi (timeout/chưa ra code) tự **nghỉ rồi thử lại**; "link không có sản phẩm" thử 3 lần rồi bỏ. Tắt server giữa chừng, job `running` sẽ về `pending` ở lần chạy sau (resume).
 - Thống kê hàng đợi (chờ / đang chạy / xong / link không có / lỗi) hiện realtime trên dashboard.
