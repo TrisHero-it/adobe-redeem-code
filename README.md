@@ -49,6 +49,15 @@ npm test                                     # chạy test
 | E | Photography 1TB |
 | F | Stock |
 
+## Kiến trúc: DB + hàng đợi
+
+- **SQLite (`data.db`)** là nguồn chính: lưu `links`, `codes` (mã theo từng sản phẩm) và `jobs` (hàng đợi). File này nằm ngoài git.
+- Khi bấm Chạy: tool **đồng bộ Sheet → DB** (nạp link mới + code có sẵn), tạo **job** cho các (link, sản phẩm) cần lấy, rồi chạy **nhiều luồng song song** (2–5, chỉnh ở ô "Số luồng").
+- Mỗi luồng dùng một `browserContext` riêng để **không tráo mã** giữa các luồng.
+- Lấy được mã nào **lưu ngay** vào DB **và** ghi ô tương ứng trên Google Sheet.
+- Job lỗi (timeout/chưa ra code) tự **nghỉ rồi thử lại**; "link không có sản phẩm" thử 3 lần rồi bỏ. Tắt server giữa chừng, job `running` sẽ về `pending` ở lần chạy sau (resume).
+- Thống kê hàng đợi (chờ / đang chạy / xong / link không có / lỗi) hiện realtime trên dashboard.
+
 ## Ghi chú kỹ thuật
 
 - Trang Adobe **đảo thứ tự sản phẩm mỗi lần tải** và **mỗi link có bộ ProductID riêng**, nên tool nhận diện sản phẩm theo **TÊN** cạnh nút (Stock/Creative Cloud/Substance/Acrobat/Photography), không theo vị trí hay ProductID.

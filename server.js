@@ -1,118 +1,128 @@
 /**
- * Server quản lý tool Adobe Partner Offer.
- * Chạy:  node server.js   ->  mở http://localhost:3000
+ * Server quản lý — dùng DB (SQLite) + hàng đợi song song.
+ * Chạy:  node server.js   ->  http://localhost:3001
  */
 const express = require('express');
 const path = require('path');
-const { runScan, addLinks, HEADERS, COL_ORDER, SPREADSHEET_ID, TAB } = require('./lib/core');
+const { HEADERS, COL_ORDER, SPREADSHEET_ID, TAB, addLinks } = require('./lib/core');
+const { importFromSheet, enqueue, Runner } = require('./lib/queue');
+const dbm = require('./lib/db');
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
 const PORT = process.env.PORT || 3001;
 
-// Trạng thái công việc trong bộ nhớ
-const job = {
-  state: 'idle', // idle | running | done | stopped | error
-  all: false,
-  total: 0,
-  done: 0,
-  current: null, // {rowNumber, purl}
+// Trạng thái trong bộ nhớ
+const state = {
+  phase: 'idle', // idle | running | done | stopped | error
+  concurrency: 2,
   logs: [],
   startedAt: null,
   finishedAt: null,
   error: null,
-  stopRequested: false,
 };
+let runner = null;
 function pushLog(msg) {
-  const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
-  job.logs.push(line);
-  if (job.logs.length > 500) job.logs.shift();
+  state.logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
+  if (state.logs.length > 800) state.logs.shift();
 }
 
-// Thông tin chung + cấu hình
 app.get('/api/info', (req, res) => {
   res.json({
-    spreadsheetId: SPREADSHEET_ID,
-    tab: TAB,
     columns: HEADERS,
     productIds: COL_ORDER,
     sheetUrl: `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit`,
+    tab: TAB,
+    dbPath: dbm.DB_PATH,
   });
 });
 
-// Thêm link mới vào cột A của sheet
+app.get('/api/status', (req, res) => {
+  res.json({
+    phase: state.phase,
+    concurrency: state.concurrency,
+    stats: dbm.queueStats(),
+    links: dbm.allLinks.all().length,
+    logs: state.logs,
+    error: state.error,
+    stopRequested: runner ? runner.stopFlag : false,
+  });
+});
+
+// Nạp link + code từ Sheet vào DB
+app.post('/api/import', async (req, res) => {
+  try {
+    const r = await importFromSheet();
+    pushLog(`Import từ Sheet: ${r.links} link, ${r.codes} code.`);
+    res.json(r);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Thêm link mới (ghi Sheet + đồng bộ vào DB)
 app.post('/api/add-links', async (req, res) => {
   try {
     const r = await addLinks(req.body && req.body.text);
+    if (r.added) await importFromSheet();
     res.json(r);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Chạy: import -> enqueue -> start runner
+app.post('/api/run', async (req, res) => {
+  if (state.phase === 'running') return res.status(409).json({ error: 'Đang chạy rồi.' });
+  const body = req.body || {};
+  let products = Array.isArray(body.products) ? body.products.map(String).filter((p) => COL_ORDER.includes(p)) : COL_ORDER.slice();
+  if (!products.length) return res.status(400).json({ error: 'Chưa chọn sản phẩm nào.' });
+  const all = !!body.all;
+  const limit = Number(body.limit) > 0 ? Math.floor(Number(body.limit)) : 0;
+  const concurrency = Math.max(1, Math.min(5, Number(body.concurrency) || 2));
+  const headless = body.headless === false ? false : true;
+
+  Object.assign(state, {
+    phase: 'running', concurrency, logs: [], startedAt: Date.now(), finishedAt: null, error: null,
+  });
+  res.json({ ok: true });
+
+  try {
+    const imp = await importFromSheet();
+    pushLog(`Đồng bộ Sheet -> DB: ${imp.links} link, ${imp.codes} code có sẵn.`);
+    const eq = enqueue({ products, all, limit });
+    const names = products.map((p) => HEADERS[COL_ORDER.indexOf(p)]).join(', ');
+    pushLog(`Tạo ${eq.jobs} job cho ${eq.links} link (${all ? 'quét lại' : 'ô trống'}${limit ? `, giới hạn ${limit}` : ''}).`);
+    pushLog(`Sản phẩm: ${names} | ${concurrency} luồng.`);
+    if (eq.jobs === 0) { state.phase = 'done'; state.finishedAt = Date.now(); pushLog('Không có job nào cần chạy.'); return; }
+
+    runner = new Runner({ concurrency, headless, onLog: pushLog });
+    const r = await runner.start();
+    state.phase = r.stopped ? 'stopped' : 'done';
+    state.finishedAt = Date.now();
+    pushLog(r.stopped ? 'Đã dừng.' : 'Hoàn tất hàng đợi.');
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    state.phase = 'error';
+    state.error = e.message;
+    state.finishedAt = Date.now();
+    pushLog(`LỖI: ${e.message}`);
+  } finally {
+    runner = null;
   }
 });
 
-// Trạng thái công việc
-app.get('/api/status', (req, res) => res.json(job));
-
-// Chạy quét
-app.post('/api/run', async (req, res) => {
-  if (job.state === 'running') return res.status(409).json({ error: 'Đang chạy rồi.' });
-  const all = !!(req.body && req.body.all);
-  const headless = req.body && req.body.headless === false ? false : true;
-  let products = req.body && Array.isArray(req.body.products) ? req.body.products.map(String) : COL_ORDER.slice();
-  products = products.filter((p) => COL_ORDER.includes(p));
-  if (!products.length) return res.status(400).json({ error: 'Chưa chọn sản phẩm nào.' });
-  const limit = req.body && Number(req.body.limit) > 0 ? Math.floor(Number(req.body.limit)) : 0;
-
-  Object.assign(job, {
-    state: 'running', all, products, total: 0, done: 0, current: null,
-    logs: [], startedAt: Date.now(), finishedAt: null, error: null, stopRequested: false,
-  });
-  const names = products.map((p) => HEADERS[COL_ORDER.indexOf(p)]).join(', ');
-  pushLog(`Bắt đầu quét (${all ? 'quét lại' : 'ô trống'}, ${headless ? 'ẩn' : 'hiện'} trình duyệt${limit ? `, giới hạn ${limit} link` : ''}).`);
-  pushLog(`Sản phẩm: ${names}`);
-  res.json({ ok: true });
-
-  runScan({
-    all,
-    headless,
-    products,
-    limit,
-    shouldStop: () => job.stopRequested,
-    onProgress: (evt) => {
-      if (evt.type === 'start') job.total = evt.total;
-      else if (evt.type === 'row') job.current = { rowNumber: evt.rowNumber, purl: evt.purl, got: 0, need: null, round: 0 };
-      else if (evt.type === 'row-progress' && job.current) {
-        job.current.got = evt.got; job.current.need = evt.need; job.current.round = evt.round;
-      }
-      else if (evt.type === 'row-done') job.done = evt.done;
-      else if (evt.type === 'log') pushLog(evt.msg);
-    },
-  })
-    .then((r) => {
-      job.state = r.stopped ? 'stopped' : 'done';
-      job.current = null;
-      job.finishedAt = Date.now();
-      pushLog(r.stopped ? `Đã dừng. Đã xử lý ${r.done} hàng.` : `Hoàn tất. Đã xử lý ${r.done} hàng.`);
-    })
-    .catch((e) => {
-      job.state = 'error';
-      job.error = e.message;
-      job.finishedAt = Date.now();
-      pushLog(`LỖI: ${e.message}`);
-    });
-});
-
-// Dừng tool
 app.post('/api/stop', (req, res) => {
-  if (job.state !== 'running') return res.status(409).json({ error: 'Không có tiến trình đang chạy.' });
-  job.stopRequested = true;
+  if (state.phase !== 'running' || !runner) return res.status(409).json({ error: 'Không có tiến trình đang chạy.' });
+  runner.stop();
   pushLog('⏹ Nhận yêu cầu DỪNG — đang kết thúc an toàn...');
   res.json({ ok: true });
 });
 
-// Chỉ lắng nghe trên localhost để không lộ ra mạng LAN
+// Dọn toàn bộ job (reset hàng đợi)
+app.post('/api/clear-queue', (req, res) => {
+  if (state.phase === 'running') return res.status(409).json({ error: 'Đang chạy, không thể dọn.' });
+  dbm.clearJobs();
+  pushLog('Đã dọn hàng đợi.');
+  res.json({ ok: true });
+});
+
 app.listen(PORT, '127.0.0.1', () => {
-  console.log(`\n  Trang quản lý: http://localhost:${PORT}\n`);
+  console.log(`\n  Trang quản lý: http://localhost:${PORT}\n  DB: ${dbm.DB_PATH}\n`);
 });

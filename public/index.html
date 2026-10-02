@@ -94,19 +94,21 @@
       <label class="toggle"><input type="checkbox" id="showBrowser" /> Hiện trình duyệt</label>
     </div>
     <div class="row-controls" style="margin-top:10px;">
-      <label class="toggle" style="color:var(--text)">Số lượng link cần chạy:
-        <input type="number" id="limit" min="1" placeholder="tất cả" style="width:110px;" />
+      <label class="toggle" style="color:var(--text)">Số lượng link:
+        <input type="number" id="limit" min="1" placeholder="tất cả" style="width:90px;" />
       </label>
-      <span class="muted">Để trống = chạy tất cả link thỏa điều kiện.</span>
+      <label class="toggle" style="color:var(--text)">Số luồng song song:
+        <input type="number" id="concurrency" min="1" max="5" value="2" style="width:70px;" />
+      </label>
     </div>
     <p class="muted" style="margin-top:8px;">Chỉ các cột được tích mới bị ghi; cột không chọn giữ nguyên.
-    Tool sẽ <b>lấy bằng được</b> đủ các mã đã chọn — gặp lỗi/timeout thì tự nghỉ rồi thử lại.</p>
+    Dùng <b>DB + hàng đợi</b>: lấy được mã nào lưu ngay (DB + Sheet), lỗi thì nghỉ & thử lại tới khi đủ.</p>
     <div class="status" style="margin-top:14px;">
       <span id="badge" class="badge idle">idle</span>
       <div class="bar"><div id="progress"></div></div>
       <span id="progressText" class="muted">—</span>
     </div>
-    <div id="currentRow" class="muted" style="margin-top:8px;"></div>
+    <div id="stats" class="muted" style="margin-top:10px;"></div>
   </div>
 
   <div class="card">
@@ -170,26 +172,28 @@ let polling = null;
 async function poll() {
   const s = await fetch('/api/status').then(x=>x.json());
   const badge = $('badge');
-  badge.className = 'badge ' + s.state;
-  badge.textContent = { idle:'chưa chạy', running:'đang chạy', done:'xong', stopped:'đã dừng', error:'lỗi' }[s.state] || s.state;
-  const pct = s.total ? Math.round(s.done / s.total * 100) : (s.state==='done'?100:0);
+  badge.className = 'badge ' + s.phase;
+  badge.textContent = { idle:'chưa chạy', running:'đang chạy', done:'xong', stopped:'đã dừng', error:'lỗi' }[s.phase] || s.phase;
+  const st = s.stats || {};
+  const processed = (st.done||0) + (st.notfound||0) + (st.error||0);
+  const total = st.total || 0;
+  const pct = total ? Math.round(processed / total * 100) : (s.phase==='done'?100:0);
   $('progress').style.width = pct + '%';
-  $('progressText').textContent = s.total ? `${s.done}/${s.total} link (${pct}%)` : '—';
-  if (s.current) {
-    let extra = '';
-    if (s.current.need) extra = ` — đã lấy ${s.current.got}/${s.current.need} mã (vòng ${s.current.round})`;
-    $('currentRow').textContent = `Đang xử lý hàng ${s.current.rowNumber}: ${s.current.purl}${extra}`;
-  } else $('currentRow').textContent = '';
+  $('progressText').textContent = total ? `${processed}/${total} job (${pct}%)` : '—';
+  $('stats').innerHTML = total
+    ? `⏳ chờ: <b>${st.pending||0}</b> &nbsp; ▶ đang chạy: <b>${st.running||0}</b> &nbsp; `
+      + `✅ xong: <b>${st.done||0}</b> &nbsp; ∅ link không có: <b>${st.notfound||0}</b> &nbsp; ❌ lỗi: <b>${st.error||0}</b>`
+      + ` &nbsp;|&nbsp; ${s.links} link trong DB`
+    : `${s.links||0} link trong DB`;
   $('log').textContent = (s.logs||[]).join('\n');
   $('log').scrollTop = $('log').scrollHeight;
 
-  const running = s.state === 'running';
+  const running = s.phase === 'running';
   const none = getSelected().length === 0;
   $('btnEmpty').disabled = running || none;
   $('btnAll').disabled = running || none;
   $('btnStop').disabled = !running || s.stopRequested;
-  if (running && s.stopRequested) $('btnStop').textContent = '⏹ Đang dừng...';
-  else $('btnStop').textContent = '⏹ Dừng';
+  $('btnStop').textContent = (running && s.stopRequested) ? '⏹ Đang dừng...' : '⏹ Dừng';
 
   if (running && !polling) polling = setInterval(poll, 1200);
   if (!running && polling) { clearInterval(polling); polling = null; }
@@ -201,7 +205,11 @@ async function run(all) {
   const headless = !$('showBrowser').checked;
   const r = await fetch('/api/run', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ all, headless, products, limit: Number($('limit').value) || 0 })
+    body: JSON.stringify({
+      all, headless, products,
+      limit: Number($('limit').value) || 0,
+      concurrency: Number($('concurrency').value) || 2,
+    })
   });
   if (r.status === 409) { alert('Tool đang chạy rồi.'); return; }
   if (r.status === 400) { alert((await r.json()).error || 'Lỗi.'); return; }

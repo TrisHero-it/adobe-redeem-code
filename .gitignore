@@ -10,3 +10,8 @@ node_modules/
 output/
 .playwright-mcp/
 *.log
+
+# Local database (SQLite)
+data.db
+data.db-wal
+data.db-shm
