@@ -50,6 +50,12 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// Dữ liệu bảng: link + code + trạng thái job theo sản phẩm
+app.get('/api/links', (req, res) => {
+  try { res.json({ columns: HEADERS, productIds: COL_ORDER, rows: dbm.tableData() }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Nạp link + code từ Sheet vào DB
 app.post('/api/import', async (req, res) => {
   try {

@@ -7,70 +7,75 @@
 <style>
   :root {
     --bg:#0f1115; --panel:#181b22; --border:#2a2f3a; --text:#e6e8ee; --muted:#9aa4b2;
-    --accent:#e34f26; --ok:#3fb950; --warn:#d29922; --err:#f85149; --chip:#232833;
+    --accent:#e34f26; --ok:#3fb950; --warn:#d29922; --err:#f85149; --chip:#232833; --run:#1f6feb;
   }
   * { box-sizing:border-box; }
   body { margin:0; font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
-  header { padding:18px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-  header h1 { font-size:18px; margin:0; }
+  header { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-wrap:wrap; position:sticky; top:0; background:var(--bg); z-index:5; }
+  header h1 { font-size:17px; margin:0; }
   header .adobe { background:var(--accent); color:#fff; border-radius:6px; padding:4px 8px; font-weight:700; font-size:13px; }
   a { color:#58a6ff; }
-  main { padding:20px 24px; max-width:1100px; margin:0 auto; }
-  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:18px; }
+  main { padding:18px 24px; max-width:1300px; margin:0 auto; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:16px; }
+  h2 { font-size:15px; margin:0 0 12px; }
+  .muted { color:var(--muted); font-size:13px; }
   .row-controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  button { font:inherit; cursor:pointer; border:none; border-radius:8px; padding:10px 16px; font-weight:600; }
+  button { font:inherit; cursor:pointer; border:none; border-radius:8px; padding:9px 15px; font-weight:600; }
   button.primary { background:var(--accent); color:#fff; }
   button.ghost { background:var(--chip); color:var(--text); border:1px solid var(--border); }
   button.danger { background:var(--err); color:#fff; }
+  button.small { padding:6px 10px; font-size:13px; }
   button:disabled { opacity:.5; cursor:not-allowed; }
   label.toggle { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:14px; }
-  .status { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
-  .badge { padding:4px 10px; border-radius:20px; font-size:13px; font-weight:600; }
-  .badge.idle{background:#30363d;color:#c9d1d9;} .badge.running{background:#1f6feb;color:#fff;}
-  .badge.done{background:var(--ok);color:#04260f;} .badge.error{background:var(--err);color:#fff;}
-  .badge.stopped{background:var(--warn);color:#3a2a04;}
-  .bar { height:8px; background:#30363d; border-radius:6px; overflow:hidden; flex:1; min-width:160px; }
-  .bar > div { height:100%; background:var(--accent); width:0%; transition:width .3s; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
-  th { color:var(--muted); font-weight:600; }
-  .cols th { font-size:12px; }
-  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; }
-  .dot.on{background:var(--ok);} .dot.off{background:#484f58;}
-  .code { font-family:ui-monospace,Consolas,monospace; font-size:11.5px; color:#c9d1d9; word-break:break-all; }
-  .code.empty { color:#484f58; font-style:italic; }
-  .purl { font-family:ui-monospace,Consolas,monospace; font-size:12px; color:#8b949e; }
-  .log { background:#0b0d11; border:1px solid var(--border); border-radius:8px; padding:12px; height:220px; overflow:auto;
-         font-family:ui-monospace,Consolas,monospace; font-size:12px; white-space:pre-wrap; color:#b9c0cc; }
-  h2 { font-size:15px; margin:0 0 12px; }
-  .muted { color:var(--muted); font-size:13px; }
-  .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:8px; }
-  .legend span { color:var(--muted); font-size:12px; }
+  input[type=number], input[type=text], textarea {
+    background:#0b0d11; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:7px 9px; font:inherit; }
+  textarea { font:13px ui-monospace,Consolas,monospace; resize:vertical; width:100%; }
   .picker { display:flex; gap:10px; flex-wrap:wrap; }
   .picker label { display:flex; align-items:center; gap:8px; background:var(--chip); border:1px solid var(--border);
     border-radius:8px; padding:8px 12px; cursor:pointer; font-size:14px; user-select:none; }
   .picker label:has(input:checked) { border-color:var(--accent); background:#2a1f1b; }
   .picker .col { color:var(--muted); font-size:11px; }
-  button.small { padding:6px 10px; font-size:13px; }
-  input[type=number] { background:#0b0d11; color:var(--text); border:1px solid var(--border);
-    border-radius:6px; padding:6px 8px; font:inherit; }
-  textarea { background:#0b0d11; color:var(--text); border:1px solid var(--border);
-    border-radius:8px; padding:8px 10px; font:13px ui-monospace,Consolas,monospace; resize:vertical; }
+  /* status */
+  .status { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  .badge { padding:4px 10px; border-radius:20px; font-size:13px; font-weight:600; }
+  .badge.idle{background:#30363d;color:#c9d1d9;} .badge.running{background:var(--run);color:#fff;}
+  .badge.done{background:var(--ok);color:#04260f;} .badge.error{background:var(--err);color:#fff;}
+  .badge.stopped{background:var(--warn);color:#3a2a04;}
+  .bar { height:8px; background:#30363d; border-radius:6px; overflow:hidden; flex:1; min-width:160px; }
+  .bar > div { height:100%; background:var(--accent); width:0%; transition:width .3s; }
+  /* table */
+  .tablewrap { overflow:auto; max-height:62vh; border:1px solid var(--border); border-radius:8px; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  thead th { position:sticky; top:0; background:#1d212a; z-index:2; }
+  th,td { text-align:left; padding:7px 9px; border-bottom:1px solid var(--border); vertical-align:top; white-space:nowrap; }
+  th { color:var(--muted); font-weight:600; font-size:12px; }
+  td.purl { font-family:ui-monospace,Consolas,monospace; color:#8b949e; max-width:230px; overflow:hidden; text-overflow:ellipsis; }
+  .cell-code a { font-family:ui-monospace,Consolas,monospace; font-size:11.5px; }
+  .pill { font-size:11px; padding:2px 7px; border-radius:10px; }
+  .pill.empty{background:#30363d;color:#8b949e;} .pill.pending{background:#243b63;color:#cfe0ff;}
+  .pill.running{background:var(--run);color:#fff;} .pill.notfound{background:#3a2f12;color:#e8c777;}
+  .pill.error{background:#4a1f1f;color:#ff9b95;}
+  .copy { cursor:pointer; color:#8b949e; margin-left:6px; font-size:11px; }
+  .log { background:#0b0d11; border:1px solid var(--border); border-radius:8px; padding:12px; height:180px; overflow:auto;
+         font-family:ui-monospace,Consolas,monospace; font-size:12px; white-space:pre-wrap; color:#b9c0cc; }
+  .toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .search { width:260px; }
 </style>
 </head>
 <body>
 <header>
   <span class="adobe">Adobe</span>
-  <h1>Quản lý Partner Offer — lấy code redeem</h1>
+  <h1>Quản lý Partner Offer — DB + hàng đợi</h1>
+  <span id="badge" class="badge idle" style="margin-left:auto;">chưa chạy</span>
 </header>
 <main>
 
   <div class="card">
     <h2>Thêm link mới vào sheet</h2>
-    <p class="muted">Dán một hoặc nhiều link (mỗi dòng một link) — tự thêm vào cột A, bỏ link trùng.</p>
-    <textarea id="newLinks" rows="3" placeholder="https://www.adobepartneroffer.com/..." style="width:100%;"></textarea>
+    <textarea id="newLinks" rows="2" placeholder="https://www.adobepartneroffer.com/... (mỗi dòng một link)"></textarea>
     <div class="row-controls" style="margin-top:8px;">
-      <button id="btnAddLinks" class="primary">➕ Thêm vào sheet</button>
+      <button id="btnAddLinks" class="primary small">➕ Thêm vào sheet</button>
+      <button id="btnImport" class="ghost small">⤓ Đồng bộ Sheet → DB</button>
       <span id="addResult" class="muted"></span>
     </div>
   </div>
@@ -91,26 +96,20 @@
       <button id="btnEmpty" class="primary">▶ Chạy (chỉ ô trống)</button>
       <button id="btnAll" class="ghost">↻ Chạy lại (ghi đè ô đã chọn)</button>
       <button id="btnStop" class="danger" disabled>⏹ Dừng</button>
+      <button id="btnClear" class="ghost small">🧹 Dọn hàng đợi</button>
       <label class="toggle"><input type="checkbox" id="showBrowser" /> Hiện trình duyệt</label>
     </div>
     <div class="row-controls" style="margin-top:10px;">
       <label class="toggle" style="color:var(--text)">Số lượng link:
-        <input type="number" id="limit" min="1" placeholder="tất cả" style="width:90px;" />
-      </label>
-      <label class="toggle" style="color:var(--text)">Số luồng song song:
-        <input type="number" id="concurrency" min="1" max="5" value="2" style="width:70px;" />
-      </label>
+        <input type="number" id="limit" min="1" placeholder="tất cả" style="width:90px;" /></label>
+      <label class="toggle" style="color:var(--text)">Số luồng:
+        <input type="number" id="concurrency" min="1" max="5" value="2" style="width:70px;" /></label>
     </div>
     <div style="margin-top:10px;">
-      <label class="toggle" style="color:var(--text); display:block; margin-bottom:4px;">Proxy (mỗi dòng một proxy — mỗi luồng dùng 1 proxy, xoay vòng):</label>
-      <textarea id="proxies" rows="3" style="width:100%;"
-        placeholder="host:port&#10;host:port:user:pass&#10;user:pass@host:port&#10;socks5://host:port"></textarea>
-      <span class="muted">Để trống = chạy không proxy. Nên đặt số proxy ≥ số luồng để mỗi luồng một IP.</span>
+      <label class="toggle" style="color:var(--text); display:block; margin-bottom:4px;">Proxy (mỗi dòng một proxy, mỗi luồng 1 proxy):</label>
+      <textarea id="proxies" rows="2" placeholder="host:port&#10;host:port:user:pass&#10;user:pass@host:port&#10;socks5://host:port"></textarea>
     </div>
-    <p class="muted" style="margin-top:8px;">Chỉ các cột được tích mới bị ghi; cột không chọn giữ nguyên.
-    Dùng <b>DB + hàng đợi</b>: lấy được mã nào lưu ngay (DB + Sheet), lỗi thì nghỉ & thử lại tới khi đủ.</p>
     <div class="status" style="margin-top:14px;">
-      <span id="badge" class="badge idle">idle</span>
       <div class="bar"><div id="progress"></div></div>
       <span id="progressText" class="muted">—</span>
     </div>
@@ -118,13 +117,21 @@
   </div>
 
   <div class="card">
-    <h2>Sẽ lấy những code gì</h2>
-    <p class="muted" id="colsInfo">Mỗi link lấy tối đa 5 code, ghi cố định vào các cột:</p>
-    <div class="legend" id="legend"></div>
-    <p class="muted" style="margin-top:10px;">
-      Google Sheet: <a id="sheetLink" href="#" target="_blank">mở sheet</a> — tab <code id="tabName"></code>.
-      Dán link partner mới vào <b>cột A</b> rồi bấm “Chạy (chỉ hàng trống)”.
-    </p>
+    <div class="toolbar">
+      <h2 style="margin:0;">Bảng link &amp; code</h2>
+      <div class="row-controls">
+        <input type="text" id="search" class="search" placeholder="Lọc theo link / code..." />
+        <label class="toggle"><input type="checkbox" id="onlyMissing" /> Chỉ link còn thiếu</label>
+        <button id="btnReloadTable" class="ghost small">⟳ Tải lại</button>
+        <span id="tableInfo" class="muted"></span>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"><tr><td class="muted" colspan="7">Đang tải…</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="card">
@@ -134,137 +141,154 @@
 
 </main>
 <script>
-let COLUMNS = [];
-let PRODUCT_IDS = [];
 const $ = (id) => document.getElementById(id);
+let COLUMNS = [], PRODUCT_IDS = [];
 const STORE_KEY = 'adobe_selected_products_v2';
+
+function rcOf(link){ const m=(link||'').match(/rc=([A-Z0-9-]+)/i); return m?m[1]:link; }
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 async function loadInfo() {
   const r = await fetch('/api/info').then(x=>x.json());
-  COLUMNS = r.columns;
-  PRODUCT_IDS = r.productIds;
-  $('sheetLink').href = r.sheetUrl;
-  $('tabName').textContent = r.tab;
-  // legend
-  $('legend').innerHTML = r.columns.map((c,i)=>
-    `<span><b style="color:#e6e8ee">Cột ${String.fromCharCode(66+i)}</b> — ${c}</span>`).join('');
-  // product picker (checkbox)
-  let saved = null;
-  try { saved = JSON.parse(localStorage.getItem(STORE_KEY)); } catch {}
+  COLUMNS = r.columns; PRODUCT_IDS = r.productIds;
+  // product picker
+  let saved=null; try { saved=JSON.parse(localStorage.getItem(STORE_KEY)); } catch {}
   $('productPicker').innerHTML = r.productIds.map((pid,i)=>{
     const checked = !saved || saved.includes(pid) ? 'checked' : '';
     return `<label><input type="checkbox" class="prod" value="${pid}" ${checked}/>
-      <span>${r.columns[i]}</span><span class="col">Cột ${String.fromCharCode(66+i)}</span></label>`;
+      <span>${esc(r.columns[i])}</span><span class="col">Cột ${String.fromCharCode(66+i)}</span></label>`;
   }).join('');
-  document.querySelectorAll('.prod').forEach(c => c.addEventListener('change', onPickChange));
+  document.querySelectorAll('.prod').forEach(c=>c.addEventListener('change',onPickChange));
+  // table head
+  $('thead').innerHTML = '<th>Dòng</th><th>Link</th>' +
+    r.columns.map((c,i)=>`<th>${String.fromCharCode(66+i)} · ${esc(c)}</th>`).join('');
   updatePickCount();
 }
 
-function getSelected() {
-  return [...document.querySelectorAll('.prod:checked')].map(c => c.value);
-}
-function onPickChange() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(getSelected())); } catch {}
-  updatePickCount();
-}
-function updatePickCount() {
-  const n = getSelected().length;
+function getSelected(){ return [...document.querySelectorAll('.prod:checked')].map(c=>c.value); }
+function onPickChange(){ try{localStorage.setItem(STORE_KEY,JSON.stringify(getSelected()));}catch{} updatePickCount(); }
+function updatePickCount(){
+  const n=getSelected().length;
   $('pickCount').textContent = `Đang chọn ${n}/${PRODUCT_IDS.length} sản phẩm`;
-  const none = n === 0;
-  $('btnEmpty').disabled = none; $('btnAll').disabled = none;
 }
 
-let polling = null;
-async function poll() {
-  const s = await fetch('/api/status').then(x=>x.json());
-  const badge = $('badge');
-  badge.className = 'badge ' + s.phase;
-  badge.textContent = { idle:'chưa chạy', running:'đang chạy', done:'xong', stopped:'đã dừng', error:'lỗi' }[s.phase] || s.phase;
-  const st = s.stats || {};
-  const processed = (st.done||0) + (st.notfound||0) + (st.error||0);
-  const total = st.total || 0;
-  const pct = total ? Math.round(processed / total * 100) : (s.phase==='done'?100:0);
-  $('progress').style.width = pct + '%';
-  $('progressText').textContent = total ? `${processed}/${total} job (${pct}%)` : '—';
-  $('stats').innerHTML = total
-    ? `⏳ chờ: <b>${st.pending||0}</b> &nbsp; ▶ đang chạy: <b>${st.running||0}</b> &nbsp; `
-      + `✅ xong: <b>${st.done||0}</b> &nbsp; ∅ link không có: <b>${st.notfound||0}</b> &nbsp; ❌ lỗi: <b>${st.error||0}</b>`
-      + ` &nbsp;|&nbsp; ${s.links} link trong DB`
-    : `${s.links||0} link trong DB`;
-  $('log').textContent = (s.logs||[]).join('\n');
-  $('log').scrollTop = $('log').scrollHeight;
-
-  const running = s.phase === 'running';
-  const none = getSelected().length === 0;
-  $('btnEmpty').disabled = running || none;
-  $('btnAll').disabled = running || none;
-  $('btnStop').disabled = !running || s.stopRequested;
-  $('btnStop').textContent = (running && s.stopRequested) ? '⏹ Đang dừng...' : '⏹ Dừng';
-
-  if (running && !polling) polling = setInterval(poll, 1200);
-  if (!running && polling) { clearInterval(polling); polling = null; }
+// ---- Table ----
+function cellHtml(row, key){
+  const code = row.codes[key];
+  if (code) {
+    return `<span class="cell-code"><a href="${esc(code)}" target="_blank" title="${esc(code)}">${esc(rcOf(code))}</a>`
+      + `<span class="copy" data-copy="${esc(code)}" title="Copy link">⧉</span></span>`;
+  }
+  const st = row.jobs[key];
+  const label = { pending:'⏳ chờ', running:'▶ chạy', notfound:'∅ không có', error:'❌ lỗi' }[st] || '–';
+  const cls = { pending:'pending', running:'running', notfound:'notfound', error:'error' }[st] || 'empty';
+  return `<span class="pill ${cls}">${label}</span>`;
 }
 
-async function run(all) {
-  const products = getSelected();
-  if (!products.length) { alert('Hãy tích chọn ít nhất 1 sản phẩm.'); return; }
-  const headless = !$('showBrowser').checked;
-  const r = await fetch('/api/run', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      all, headless, products,
-      limit: Number($('limit').value) || 0,
-      concurrency: Number($('concurrency').value) || 2,
-      proxies: $('proxies').value,
-    })
-  });
-  if (r.status === 409) { alert('Tool đang chạy rồi.'); return; }
-  if (r.status === 400) { alert((await r.json()).error || 'Lỗi.'); return; }
-  if (!polling) polling = setInterval(poll, 1200);
-  poll();
-}
-
-function setAllChecks(v) {
-  document.querySelectorAll('.prod').forEach(c => { c.checked = v; });
-  onPickChange();
-}
-
-$('btnEmpty').onclick = () => run(false);
-$('btnAll').onclick = () => {
-  const names = getSelected().map(pid => COLUMNS[PRODUCT_IDS.indexOf(pid)]).join(', ');
-  if (confirm('Ghi đè code mới cho các cột đã chọn (' + names + ') ở mọi hàng?')) run(true);
-};
-$('pickAll').onclick = () => setAllChecks(true);
-$('pickNone').onclick = () => setAllChecks(false);
-$('btnAddLinks').onclick = async () => {
-  const text = $('newLinks').value.trim();
-  if (!text) { alert('Chưa dán link nào.'); return; }
-  $('btnAddLinks').disabled = true;
+let TABLE = [];
+async function loadTable(){
   try {
-    const r = await fetch('/api/add-links', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text })
-    }).then(x=>x.json());
-    if (r.error) { $('addResult').textContent = 'Lỗi: ' + r.error; }
-    else {
-      $('addResult').textContent = `Đã thêm ${r.added} link mới` + (r.skipped?`, bỏ ${r.skipped} trùng`:'') + '.';
-      if (r.added) $('newLinks').value = '';
-    }
-  } catch (e) { $('addResult').textContent = 'Lỗi: ' + e.message; }
-  $('btnAddLinks').disabled = false;
-};
-$('btnStop').onclick = async () => {
-  if (!confirm('Dừng tool? Tiến trình sẽ kết thúc sau khi xong thao tác hiện tại (các mã đã lấy vẫn được giữ).')) return;
-  $('btnStop').disabled = true; $('btnStop').textContent = '⏹ Đang dừng...';
-  const r = await fetch('/api/stop', { method:'POST' });
-  if (r.status === 409) alert((await r.json()).error || 'Không có gì để dừng.');
+    const r = await fetch('/api/links').then(x=>x.json());
+    TABLE = r.rows || [];
+    renderTable();
+  } catch(e){ $('tbody').innerHTML = `<tr><td colspan="7" style="color:var(--err)">Lỗi tải bảng: ${esc(e.message)}</td></tr>`; }
+}
+function renderTable(){
+  const q = $('search').value.trim().toLowerCase();
+  const onlyMissing = $('onlyMissing').checked;
+  let rows = TABLE;
+  if (onlyMissing) rows = rows.filter(r => PRODUCT_IDS.some(k=>!r.codes[k]));
+  if (q) rows = rows.filter(r => r.purl.toLowerCase().includes(q)
+    || Object.values(r.codes).some(c=>(c||'').toLowerCase().includes(q)));
+  $('tableInfo').textContent = `${rows.length}/${TABLE.length} link`;
+  if (!rows.length){ $('tbody').innerHTML = `<tr><td colspan="7" class="muted">Không có dữ liệu. Thêm link rồi bấm "Đồng bộ Sheet → DB".</td></tr>`; return; }
+  $('tbody').innerHTML = rows.map(r=>{
+    const slug = r.purl.replace(/^https?:\/\/[^/]+\//,'');
+    return `<tr>
+      <td>${r.sheetRow||''}</td>
+      <td class="purl" title="${esc(r.purl)}"><a href="${esc(r.purl)}" target="_blank">${esc(slug)}</a></td>
+      ${PRODUCT_IDS.map(k=>`<td>${cellHtml(r,k)}</td>`).join('')}
+    </tr>`;
+  }).join('');
+  document.querySelectorAll('.copy').forEach(el=>el.onclick=()=>{
+    navigator.clipboard.writeText(el.dataset.copy); el.textContent='✓'; setTimeout(()=>el.textContent='⧉',1000);
+  });
+}
+
+// ---- Status polling (reload-safe) ----
+let fastPoll = null;
+async function poll(){
+  let s;
+  try { s = await fetch('/api/status').then(x=>x.json()); } catch { return; }
+  const badge=$('badge'); badge.className='badge '+s.phase;
+  badge.textContent={idle:'chưa chạy',running:'đang chạy',done:'xong',stopped:'đã dừng',error:'lỗi'}[s.phase]||s.phase;
+  const st=s.stats||{};
+  const processed=(st.done||0)+(st.notfound||0)+(st.error||0);
+  const total=st.total||0;
+  const pct=total?Math.round(processed/total*100):(s.phase==='done'?100:0);
+  $('progress').style.width=pct+'%';
+  $('progressText').textContent=total?`${processed}/${total} job (${pct}%)`:'—';
+  $('stats').innerHTML = total
+    ? `⏳ chờ <b>${st.pending||0}</b> · ▶ chạy <b>${st.running||0}</b> · ✅ xong <b>${st.done||0}</b> · ∅ không có <b>${st.notfound||0}</b> · ❌ lỗi <b>${st.error||0}</b> &nbsp;|&nbsp; ${s.links} link trong DB`
+    : `${s.links||0} link trong DB`;
+  $('log').textContent=(s.logs||[]).join('\n'); $('log').scrollTop=$('log').scrollHeight;
+
+  const running=s.phase==='running', none=getSelected().length===0;
+  $('btnEmpty').disabled=running||none; $('btnAll').disabled=running||none;
+  $('btnClear').disabled=running;
+  $('btnStop').disabled=!running||s.stopRequested;
+  $('btnStop').textContent=(running&&s.stopRequested)?'⏹ Đang dừng...':'⏹ Dừng';
+
+  // Đang chạy -> cập nhật bảng + trạng thái nhanh (2s). Nhàn -> chậm (6s).
+  if (running){ if(!fastPoll){ fastPoll=setInterval(()=>{poll();loadTable();},2000); } }
+  else if (fastPoll){ clearInterval(fastPoll); fastPoll=null; loadTable(); }
+}
+
+async function run(all){
+  const products=getSelected();
+  if(!products.length){ alert('Hãy tích chọn ít nhất 1 sản phẩm.'); return; }
+  const r=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ all, headless:!$('showBrowser').checked, products,
+      limit:Number($('limit').value)||0, concurrency:Number($('concurrency').value)||2, proxies:$('proxies').value })});
+  if(r.status===409){ alert('Tool đang chạy rồi.'); return; }
+  if(r.status===400){ alert((await r.json()).error||'Lỗi.'); return; }
   poll();
+}
+
+$('btnEmpty').onclick=()=>run(false);
+$('btnAll').onclick=()=>{ const names=getSelected().map(p=>COLUMNS[PRODUCT_IDS.indexOf(p)]).join(', ');
+  if(confirm('Ghi đè code mới cho các cột đã chọn ('+names+')?')) run(true); };
+$('btnStop').onclick=async()=>{ if(!confirm('Dừng tool? Các mã đã lấy vẫn giữ.'))return;
+  $('btnStop').disabled=true; await fetch('/api/stop',{method:'POST'}); poll(); };
+$('btnClear').onclick=async()=>{ if(!confirm('Dọn toàn bộ hàng đợi?'))return;
+  await fetch('/api/clear-queue',{method:'POST'}); poll(); };
+$('pickAll').onclick=()=>{ document.querySelectorAll('.prod').forEach(c=>c.checked=true); onPickChange(); };
+$('pickNone').onclick=()=>{ document.querySelectorAll('.prod').forEach(c=>c.checked=false); onPickChange(); };
+$('btnReloadTable').onclick=loadTable;
+$('search').oninput=renderTable;
+$('onlyMissing').onchange=renderTable;
+$('btnImport').onclick=async()=>{
+  $('btnImport').disabled=true; $('addResult').textContent='Đang đồng bộ...';
+  try{ const r=await fetch('/api/import',{method:'POST'}).then(x=>x.json());
+    $('addResult').textContent=`Đã đồng bộ: ${r.links} link, ${r.codes} code.`; loadTable(); }
+  catch(e){ $('addResult').textContent='Lỗi: '+e.message; }
+  $('btnImport').disabled=false;
+};
+$('btnAddLinks').onclick=async()=>{
+  const text=$('newLinks').value.trim(); if(!text){ alert('Chưa dán link nào.'); return; }
+  $('btnAddLinks').disabled=true;
+  try{ const r=await fetch('/api/add-links',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).then(x=>x.json());
+    if(r.error) $('addResult').textContent='Lỗi: '+r.error;
+    else { $('addResult').textContent=`Đã thêm ${r.added} link`+(r.skipped?`, bỏ ${r.skipped} trùng`:'')+'.'; if(r.added){$('newLinks').value=''; loadTable();} }
+  }catch(e){ $('addResult').textContent='Lỗi: '+e.message; }
+  $('btnAddLinks').disabled=false;
 };
 
-// Nhớ danh sách proxy giữa các lần mở
-try { const sp = localStorage.getItem('adobe_proxies'); if (sp) $('proxies').value = sp; } catch {}
-$('proxies').addEventListener('change', () => { try { localStorage.setItem('adobe_proxies', $('proxies').value); } catch {} });
+try{ const sp=localStorage.getItem('adobe_proxies'); if(sp)$('proxies').value=sp; }catch{}
+$('proxies').addEventListener('change',()=>{ try{localStorage.setItem('adobe_proxies',$('proxies').value);}catch{} });
 
-(async () => { await loadInfo(); await poll(); })();
+// Khởi động: reload trang không mất trạng thái (đọc từ server/DB). Poll trạng thái mỗi 3s.
+(async()=>{ await loadInfo(); await loadTable(); await poll(); setInterval(poll,3000); })();
 </script>
 </body>
 </html>
