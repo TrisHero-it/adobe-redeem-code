@@ -3,90 +3,123 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Quản lý Adobe Partner Offer</title>
+<title>Adobe Partner Offer — Quản lý</title>
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'&gt;&lt;rect width='16' height='16' rx='3' fill='%23e34f26'/&gt;&lt;/svg&gt;" />
 <style>
   :root {
-    --bg:#0f1115; --panel:#181b22; --border:#2a2f3a; --text:#e6e8ee; --muted:#9aa4b2;
-    --accent:#e34f26; --ok:#3fb950; --warn:#d29922; --err:#f85149; --chip:#232833; --run:#1f6feb;
+    --bg:#0e1013; --panel:#16191f; --panel2:#1b1f27; --border:#272c36; --border2:#323846;
+    --text:#e8eaf0; --muted:#98a2b3; --faint:#6b7280;
+    --accent:#e34f26; --ok:#35c47b; --warn:#e0a52b; --err:#f2545b; --run:#3b82f6; --chip:#20252f;
+    /* màu theo sản phẩm (cột B..F) */
+    --c-creative:#8b5cf6; --c-substance:#f59e0b; --c-acrobat:#ef4444; --c-photography:#3b82f6; --c-stock:#10b981;
+    --radius:12px;
   }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
-  header { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-wrap:wrap; position:sticky; top:0; background:var(--bg); z-index:5; }
-  header h1 { font-size:17px; margin:0; }
-  header .adobe { background:var(--accent); color:#fff; border-radius:6px; padding:4px 8px; font-weight:700; font-size:13px; }
-  a { color:#58a6ff; }
-  main { padding:18px 24px; max-width:1300px; margin:0 auto; }
-  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:16px; }
-  h2 { font-size:15px; margin:0 0 12px; }
+  body { margin:0; font-family:'Segoe UI',system-ui,Roboto,Arial,sans-serif; background:
+    radial-gradient(1200px 600px at 100% -10%, #1a1f2b 0%, transparent 55%), var(--bg); color:var(--text); }
+  a { color:#7bb3ff; text-decoration:none; } a:hover{ text-decoration:underline; }
+  header { padding:16px 28px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px;
+    position:sticky; top:0; background:rgba(14,16,19,.9); backdrop-filter:blur(8px); z-index:20; }
+  header h1 { font-size:16px; margin:0; font-weight:650; letter-spacing:.2px; }
+  .brand { background:linear-gradient(135deg,#fa0f00,#e34f26); color:#fff; border-radius:8px; padding:5px 9px; font-weight:800; font-size:13px; }
+  main { padding:20px 28px 60px; max-width:1340px; margin:0 auto; }
+  .card { background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--border);
+    border-radius:var(--radius); padding:18px; margin-bottom:16px; box-shadow:0 1px 0 rgba(255,255,255,.02) inset; }
+  .card h2 { font-size:13px; margin:0 0 14px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; font-weight:700; }
   .muted { color:var(--muted); font-size:13px; }
   .row-controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  button { font:inherit; cursor:pointer; border:none; border-radius:8px; padding:9px 15px; font-weight:600; }
-  button.primary { background:var(--accent); color:#fff; }
-  button.ghost { background:var(--chip); color:var(--text); border:1px solid var(--border); }
-  button.danger { background:var(--err); color:#fff; }
-  button.small { padding:6px 10px; font-size:13px; }
-  button:disabled { opacity:.5; cursor:not-allowed; }
-  label.toggle { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:14px; }
+  button { font:inherit; cursor:pointer; border:none; border-radius:9px; padding:9px 15px; font-weight:600; transition:.15s; }
+  button:hover:not(:disabled){ transform:translateY(-1px); }
+  button.primary { background:linear-gradient(135deg,#f0603a,#e34f26); color:#fff; box-shadow:0 4px 14px rgba(227,79,38,.3); }
+  button.ghost { background:var(--chip); color:var(--text); border:1px solid var(--border2); }
+  button.danger { background:linear-gradient(135deg,#f2545b,#d93a41); color:#fff; }
+  button.small { padding:7px 11px; font-size:13px; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  label.toggle { display:inline-flex; align-items:center; gap:7px; color:var(--muted); font-size:14px; }
   input[type=number], input[type=text], textarea {
-    background:#0b0d11; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:7px 9px; font:inherit; }
+    background:#0b0d11; color:var(--text); border:1px solid var(--border2); border-radius:8px; padding:8px 10px; font:inherit; outline:none; }
+  input:focus, textarea:focus { border-color:var(--accent); }
   textarea { font:13px ui-monospace,Consolas,monospace; resize:vertical; width:100%; }
   .picker { display:flex; gap:10px; flex-wrap:wrap; }
-  .picker label { display:flex; align-items:center; gap:8px; background:var(--chip); border:1px solid var(--border);
-    border-radius:8px; padding:8px 12px; cursor:pointer; font-size:14px; user-select:none; }
-  .picker label:has(input:checked) { border-color:var(--accent); background:#2a1f1b; }
-  .picker .col { color:var(--muted); font-size:11px; }
+  .picker label { display:flex; align-items:center; gap:8px; background:var(--chip); border:1px solid var(--border2);
+    border-radius:10px; padding:9px 13px; cursor:pointer; font-size:14px; user-select:none; transition:.15s; }
+  .picker label:hover { border-color:var(--faint); }
+  .picker label:has(input:checked) { border-color:var(--accent); background:#2a1d18; box-shadow:0 0 0 1px rgba(227,79,38,.25) inset; }
+  .pdot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .picker .col { color:var(--faint); font-size:11px; }
   /* status */
-  .status { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
-  .badge { padding:4px 10px; border-radius:20px; font-size:13px; font-weight:600; }
-  .badge.idle{background:#30363d;color:#c9d1d9;} .badge.running{background:var(--run);color:#fff;}
-  .badge.done{background:var(--ok);color:#04260f;} .badge.error{background:var(--err);color:#fff;}
-  .badge.stopped{background:var(--warn);color:#3a2a04;}
-  .bar { height:8px; background:#30363d; border-radius:6px; overflow:hidden; flex:1; min-width:160px; }
-  .bar > div { height:100%; background:var(--accent); width:0%; transition:width .3s; }
+  .badge { padding:5px 12px; border-radius:20px; font-size:12.5px; font-weight:700; letter-spacing:.3px; }
+  .badge.idle{background:#2a2f3a;color:#c9d1d9;} .badge.running{background:rgba(59,130,246,.18);color:#8fbaff;border:1px solid rgba(59,130,246,.4);}
+  .badge.done{background:rgba(53,196,123,.16);color:#6ee7a8;border:1px solid rgba(53,196,123,.4);}
+  .badge.error{background:rgba(242,84,91,.16);color:#ff9ba0;border:1px solid rgba(242,84,91,.4);}
+  .badge.stopped{background:rgba(224,165,43,.16);color:#f0cd7e;border:1px solid rgba(224,165,43,.4);}
+  .bar { height:7px; background:#272c36; border-radius:6px; overflow:hidden; flex:1; min-width:180px; }
+  .bar > div { height:100%; background:linear-gradient(90deg,#e34f26,#f59e0b); width:0%; transition:width .4s; }
+  .statchips { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .sc { display:inline-flex; align-items:center; gap:6px; background:var(--chip); border:1px solid var(--border);
+    border-radius:8px; padding:5px 10px; font-size:12.5px; color:var(--muted); }
+  .sc b { color:var(--text); }
+  .sc .d { width:8px; height:8px; border-radius:50%; }
   /* table */
-  .tablewrap { overflow:auto; max-height:62vh; border:1px solid var(--border); border-radius:8px; }
-  table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  thead th { position:sticky; top:0; background:#1d212a; z-index:2; }
-  th,td { text-align:left; padding:7px 9px; border-bottom:1px solid var(--border); vertical-align:top; white-space:nowrap; }
-  th { color:var(--muted); font-weight:600; font-size:12px; }
-  td.purl { font-family:ui-monospace,Consolas,monospace; color:#8b949e; max-width:230px; overflow:hidden; text-overflow:ellipsis; }
-  .cell-code a { font-family:ui-monospace,Consolas,monospace; font-size:11.5px; }
-  .pill { font-size:11px; padding:2px 7px; border-radius:10px; }
-  .pill.empty{background:#30363d;color:#8b949e;} .pill.pending{background:#243b63;color:#cfe0ff;}
-  .pill.running{background:var(--run);color:#fff;} .pill.notfound{background:#3a2f12;color:#e8c777;}
-  .pill.error{background:#4a1f1f;color:#ff9b95;}
-  .copy { cursor:pointer; color:#8b949e; margin-left:6px; font-size:11px; }
-  .log { background:#0b0d11; border:1px solid var(--border); border-radius:8px; padding:12px; height:180px; overflow:auto;
-         font-family:ui-monospace,Consolas,monospace; font-size:12px; white-space:pre-wrap; color:#b9c0cc; }
-  .toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
-  .search { width:260px; }
+  .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .tablewrap { overflow:auto; max-height:64vh; border:1px solid var(--border); border-radius:10px; }
+  table { width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  thead th { position:sticky; top:0; z-index:3; background:#1c212b; box-shadow:0 1px 0 var(--border2); }
+  th, td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  th { color:var(--muted); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; }
+  th.prod { border-left:3px solid var(--pc); }
+  td.prodcell { border-left:3px solid color-mix(in srgb, var(--pc) 35%, transparent); }
+  tbody tr:nth-child(even){ background:rgba(255,255,255,.015); }
+  tbody tr:hover{ background:rgba(123,179,255,.06); }
+  td.idx { color:var(--faint); font-variant-numeric:tabular-nums; }
+  td.purl { font-family:ui-monospace,Consolas,monospace; color:var(--muted); max-width:240px; overflow:hidden; text-overflow:ellipsis; }
+  .fill { display:inline-block; min-width:34px; text-align:center; font-variant-numeric:tabular-nums; font-size:11px;
+    padding:2px 6px; border-radius:6px; background:var(--chip); color:var(--muted); }
+  .fill.full { background:rgba(53,196,123,.16); color:#6ee7a8; }
+  .code { display:inline-flex; align-items:center; gap:7px; }
+  .code a { font-family:ui-monospace,Consolas,monospace; font-size:11.5px; color:var(--text);
+    background:color-mix(in srgb, var(--pc) 16%, transparent); border:1px solid color-mix(in srgb, var(--pc) 40%, transparent);
+    padding:2px 8px; border-radius:7px; }
+  .code a:hover{ text-decoration:none; background:color-mix(in srgb, var(--pc) 28%, transparent); }
+  .copy { cursor:pointer; color:var(--faint); font-size:13px; opacity:0; transition:.15s; }
+  tr:hover .copy { opacity:1; }
+  .copy:hover{ color:var(--text); }
+  .pill { display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 9px; border-radius:20px; font-weight:600; }
+  .pill.empty{background:#23272f;color:var(--faint);} .pill.pending{background:rgba(59,130,246,.14);color:#9ec1ff;}
+  .pill.running{background:rgba(59,130,246,.9);color:#fff;} .pill.notfound{background:rgba(224,165,43,.14);color:#ecc06a;}
+  .pill.error{background:rgba(242,84,91,.16);color:#ff9ba0;}
+  .log { background:#0a0c10; border:1px solid var(--border); border-radius:10px; padding:14px; height:180px; overflow:auto;
+         font-family:ui-monospace,Consolas,monospace; font-size:12px; white-space:pre-wrap; color:#aab2c0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:860px){ .grid2{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <header>
-  <span class="adobe">Adobe</span>
-  <h1>Quản lý Partner Offer — DB + hàng đợi</h1>
+  <span class="brand">Adobe</span>
+  <h1>Partner Offer — Quản lý code</h1>
   <span id="badge" class="badge idle" style="margin-left:auto;">chưa chạy</span>
 </header>
 <main>
 
-  <div class="card">
-    <h2>Thêm link mới vào sheet</h2>
-    <textarea id="newLinks" rows="2" placeholder="https://www.adobepartneroffer.com/... (mỗi dòng một link)"></textarea>
-    <div class="row-controls" style="margin-top:8px;">
-      <button id="btnAddLinks" class="primary small">➕ Thêm vào sheet</button>
-      <button id="btnImport" class="ghost small">⤓ Đồng bộ Sheet → DB</button>
-      <span id="addResult" class="muted"></span>
+  <div class="grid2">
+    <div class="card">
+      <h2>Thêm link mới</h2>
+      <textarea id="newLinks" rows="2" placeholder="https://www.adobepartneroffer.com/...  (mỗi dòng một link)"></textarea>
+      <div class="row-controls" style="margin-top:10px;">
+        <button id="btnAddLinks" class="primary small">➕ Thêm vào sheet</button>
+        <button id="btnImport" class="ghost small">⤓ Đồng bộ Sheet → DB</button>
+        <span id="addResult" class="muted"></span>
+      </div>
     </div>
-  </div>
-
-  <div class="card">
-    <h2>Chọn code muốn lấy</h2>
-    <div id="productPicker" class="picker"></div>
-    <div class="row-controls" style="margin-top:8px;">
-      <button id="pickAll" class="ghost small">Chọn tất cả</button>
-      <button id="pickNone" class="ghost small">Bỏ chọn</button>
-      <span id="pickCount" class="muted"></span>
+    <div class="card">
+      <h2>Chọn code muốn lấy</h2>
+      <div id="productPicker" class="picker"></div>
+      <div class="row-controls" style="margin-top:10px;">
+        <button id="pickAll" class="ghost small">Chọn tất cả</button>
+        <button id="pickNone" class="ghost small">Bỏ chọn</button>
+        <span id="pickCount" class="muted"></span>
+      </div>
     </div>
   </div>
 
@@ -94,33 +127,33 @@
     <h2>Điều khiển</h2>
     <div class="row-controls">
       <button id="btnEmpty" class="primary">▶ Chạy (chỉ ô trống)</button>
-      <button id="btnAll" class="ghost">↻ Chạy lại (ghi đè ô đã chọn)</button>
+      <button id="btnAll" class="ghost">↻ Chạy lại (ghi đè)</button>
       <button id="btnStop" class="danger" disabled>⏹ Dừng</button>
       <button id="btnClear" class="ghost small">🧹 Dọn hàng đợi</button>
       <label class="toggle"><input type="checkbox" id="showBrowser" /> Hiện trình duyệt</label>
     </div>
-    <div class="row-controls" style="margin-top:10px;">
-      <label class="toggle" style="color:var(--text)">Số lượng link:
+    <div class="row-controls" style="margin-top:12px;">
+      <label class="toggle" style="color:var(--text)">Số lượng link
         <input type="number" id="limit" min="1" placeholder="tất cả" style="width:90px;" /></label>
-      <label class="toggle" style="color:var(--text)">Số luồng:
-        <input type="number" id="concurrency" min="1" max="5" value="2" style="width:70px;" /></label>
+      <label class="toggle" style="color:var(--text)">Số luồng
+        <input type="number" id="concurrency" min="1" max="5" value="2" style="width:66px;" /></label>
     </div>
-    <div style="margin-top:10px;">
-      <label class="toggle" style="color:var(--text); display:block; margin-bottom:4px;">Proxy (mỗi dòng một proxy, mỗi luồng 1 proxy):</label>
-      <textarea id="proxies" rows="2" placeholder="host:port&#10;host:port:user:pass&#10;user:pass@host:port&#10;socks5://host:port"></textarea>
+    <div style="margin-top:12px;">
+      <label class="toggle" style="color:var(--text); display:block; margin-bottom:5px;">Proxy — mỗi dòng một proxy, mỗi luồng 1 proxy</label>
+      <textarea id="proxies" rows="2" placeholder="host:port    |    host:port:user:pass    |    user:pass@host:port    |    socks5://host:port"></textarea>
     </div>
-    <div class="status" style="margin-top:14px;">
+    <div class="row-controls" style="margin-top:14px;">
       <div class="bar"><div id="progress"></div></div>
       <span id="progressText" class="muted">—</span>
     </div>
-    <div id="stats" class="muted" style="margin-top:10px;"></div>
+    <div id="statchips" class="statchips"></div>
   </div>
 
   <div class="card">
     <div class="toolbar">
       <h2 style="margin:0;">Bảng link &amp; code</h2>
       <div class="row-controls">
-        <input type="text" id="search" class="search" placeholder="Lọc theo link / code..." />
+        <input type="text" id="search" placeholder="🔍 Lọc link / code..." style="width:240px;" />
         <label class="toggle"><input type="checkbox" id="onlyMissing" /> Chỉ link còn thiếu</label>
         <button id="btnReloadTable" class="ghost small">⟳ Tải lại</button>
         <span id="tableInfo" class="muted"></span>
@@ -129,7 +162,7 @@
     <div class="tablewrap">
       <table>
         <thead><tr id="thead"></tr></thead>
-        <tbody id="tbody"><tr><td class="muted" colspan="7">Đang tải…</td></tr></tbody>
+        <tbody id="tbody"><tr><td class="muted" colspan="8">Đang tải…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -144,104 +177,95 @@
 const $ = (id) => document.getElementById(id);
 let COLUMNS = [], PRODUCT_IDS = [];
 const STORE_KEY = 'adobe_selected_products_v2';
+const PCOLOR = { creative:'var(--c-creative)', substance:'var(--c-substance)', acrobat:'var(--c-acrobat)', photography:'var(--c-photography)', stock:'var(--c-stock)' };
 
 function rcOf(link){ const m=(link||'').match(/rc=([A-Z0-9-]+)/i); return m?m[1]:link; }
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-async function loadInfo() {
+async function loadInfo(){
   const r = await fetch('/api/info').then(x=>x.json());
-  COLUMNS = r.columns; PRODUCT_IDS = r.productIds;
-  // product picker
-  let saved=null; try { saved=JSON.parse(localStorage.getItem(STORE_KEY)); } catch {}
+  COLUMNS=r.columns; PRODUCT_IDS=r.productIds;
+  let saved=null; try{ saved=JSON.parse(localStorage.getItem(STORE_KEY)); }catch{}
   $('productPicker').innerHTML = r.productIds.map((pid,i)=>{
-    const checked = !saved || saved.includes(pid) ? 'checked' : '';
-    return `<label><input type="checkbox" class="prod" value="${pid}" ${checked}/>
-      <span>${esc(r.columns[i])}</span><span class="col">Cột ${String.fromCharCode(66+i)}</span></label>`;
+    const checked = !saved||saved.includes(pid)?'checked':'';
+    return `<label><span class="pdot" style="background:${PCOLOR[pid]}"></span><input type="checkbox" class="prod" value="${pid}" ${checked} hidden/>
+      <span>${esc(r.columns[i])}</span><span class="col">${String.fromCharCode(66+i)}</span></label>`;
   }).join('');
   document.querySelectorAll('.prod').forEach(c=>c.addEventListener('change',onPickChange));
-  // table head
-  $('thead').innerHTML = '<th>Dòng</th><th>Link</th>' +
-    r.columns.map((c,i)=>`<th>${String.fromCharCode(66+i)} · ${esc(c)}</th>`).join('');
+  $('thead').innerHTML = '<th>Dòng</th><th>Link</th><th>Đủ</th>' +
+    r.productIds.map((pid,i)=>`<th class="prod" style="--pc:${PCOLOR[pid]}">
+       <span class="pdot" style="background:${PCOLOR[pid]}"></span> ${esc(r.columns[i])}</th>`).join('');
   updatePickCount();
 }
-
 function getSelected(){ return [...document.querySelectorAll('.prod:checked')].map(c=>c.value); }
 function onPickChange(){ try{localStorage.setItem(STORE_KEY,JSON.stringify(getSelected()));}catch{} updatePickCount(); }
-function updatePickCount(){
-  const n=getSelected().length;
-  $('pickCount').textContent = `Đang chọn ${n}/${PRODUCT_IDS.length} sản phẩm`;
-}
+function updatePickCount(){ $('pickCount').textContent=`Đang chọn ${getSelected().length}/${PRODUCT_IDS.length}`; }
 
-// ---- Table ----
-function cellHtml(row, key){
-  const code = row.codes[key];
-  if (code) {
-    return `<span class="cell-code"><a href="${esc(code)}" target="_blank" title="${esc(code)}">${esc(rcOf(code))}</a>`
-      + `<span class="copy" data-copy="${esc(code)}" title="Copy link">⧉</span></span>`;
+function cellHtml(row,key){
+  const code=row.codes[key];
+  if(code){
+    return `<span class="code"><a href="${esc(code)}" target="_blank" title="${esc(code)}">${esc(rcOf(code))}</a>`
+      +`<span class="copy" data-copy="${esc(code)}" title="Copy">⧉</span></span>`;
   }
-  const st = row.jobs[key];
-  const label = { pending:'⏳ chờ', running:'▶ chạy', notfound:'∅ không có', error:'❌ lỗi' }[st] || '–';
-  const cls = { pending:'pending', running:'running', notfound:'notfound', error:'error' }[st] || 'empty';
+  const st=row.jobs[key];
+  const map={ pending:['pending','⏳ chờ'], running:['running','▶ chạy'], notfound:['notfound','∅ không có'], error:['error','❌ lỗi'] };
+  const [cls,label]=map[st]||['empty','—'];
   return `<span class="pill ${cls}">${label}</span>`;
 }
 
-let TABLE = [];
+let TABLE=[];
 async function loadTable(){
-  try {
-    const r = await fetch('/api/links').then(x=>x.json());
-    TABLE = r.rows || [];
-    renderTable();
-  } catch(e){ $('tbody').innerHTML = `<tr><td colspan="7" style="color:var(--err)">Lỗi tải bảng: ${esc(e.message)}</td></tr>`; }
+  try{ const r=await fetch('/api/links').then(x=>x.json()); TABLE=r.rows||[]; renderTable(); }
+  catch(e){ $('tbody').innerHTML=`<tr><td colspan="8" style="color:var(--err)">Lỗi tải bảng: ${esc(e.message)}</td></tr>`; }
 }
 function renderTable(){
-  const q = $('search').value.trim().toLowerCase();
-  const onlyMissing = $('onlyMissing').checked;
-  let rows = TABLE;
-  if (onlyMissing) rows = rows.filter(r => PRODUCT_IDS.some(k=>!r.codes[k]));
-  if (q) rows = rows.filter(r => r.purl.toLowerCase().includes(q)
-    || Object.values(r.codes).some(c=>(c||'').toLowerCase().includes(q)));
-  $('tableInfo').textContent = `${rows.length}/${TABLE.length} link`;
-  if (!rows.length){ $('tbody').innerHTML = `<tr><td colspan="7" class="muted">Không có dữ liệu. Thêm link rồi bấm "Đồng bộ Sheet → DB".</td></tr>`; return; }
-  $('tbody').innerHTML = rows.map(r=>{
-    const slug = r.purl.replace(/^https?:\/\/[^/]+\//,'');
+  const q=$('search').value.trim().toLowerCase();
+  const onlyMissing=$('onlyMissing').checked;
+  let rows=TABLE;
+  if(onlyMissing) rows=rows.filter(r=>PRODUCT_IDS.some(k=>!r.codes[k]));
+  if(q) rows=rows.filter(r=>r.purl.toLowerCase().includes(q)||Object.values(r.codes).some(c=>(c||'').toLowerCase().includes(q)));
+  $('tableInfo').textContent=`${rows.length}/${TABLE.length} link`;
+  if(!rows.length){ $('tbody').innerHTML=`<tr><td colspan="8" class="muted">Chưa có dữ liệu — thêm link rồi bấm “Đồng bộ Sheet → DB”.</td></tr>`; return; }
+  $('tbody').innerHTML=rows.map(r=>{
+    const slug=r.purl.replace(/^https?:\/\/[^/]+\//,'');
+    const filled=PRODUCT_IDS.filter(k=>r.codes[k]).length;
     return `<tr>
-      <td>${r.sheetRow||''}</td>
+      <td class="idx">${r.sheetRow||''}</td>
       <td class="purl" title="${esc(r.purl)}"><a href="${esc(r.purl)}" target="_blank">${esc(slug)}</a></td>
-      ${PRODUCT_IDS.map(k=>`<td>${cellHtml(r,k)}</td>`).join('')}
+      <td><span class="fill ${filled===PRODUCT_IDS.length?'full':''}">${filled}/${PRODUCT_IDS.length}</span></td>
+      ${PRODUCT_IDS.map(k=>`<td class="prodcell" style="--pc:${PCOLOR[k]}">${cellHtml(r,k)}</td>`).join('')}
     </tr>`;
   }).join('');
   document.querySelectorAll('.copy').forEach(el=>el.onclick=()=>{
-    navigator.clipboard.writeText(el.dataset.copy); el.textContent='✓'; setTimeout(()=>el.textContent='⧉',1000);
+    navigator.clipboard.writeText(el.dataset.copy); const o=el.textContent; el.textContent='✓'; setTimeout(()=>el.textContent=o,900);
   });
 }
 
-// ---- Status polling (reload-safe) ----
-let fastPoll = null;
+let fastPoll=null;
 async function poll(){
-  let s;
-  try { s = await fetch('/api/status').then(x=>x.json()); } catch { return; }
+  let s; try{ s=await fetch('/api/status').then(x=>x.json()); }catch{ return; }
   const badge=$('badge'); badge.className='badge '+s.phase;
-  badge.textContent={idle:'chưa chạy',running:'đang chạy',done:'xong',stopped:'đã dừng',error:'lỗi'}[s.phase]||s.phase;
+  badge.textContent={idle:'chưa chạy',running:'● đang chạy',done:'✓ xong',stopped:'■ đã dừng',error:'lỗi'}[s.phase]||s.phase;
   const st=s.stats||{};
-  const processed=(st.done||0)+(st.notfound||0)+(st.error||0);
-  const total=st.total||0;
+  const processed=(st.done||0)+(st.notfound||0)+(st.error||0), total=st.total||0;
   const pct=total?Math.round(processed/total*100):(s.phase==='done'?100:0);
   $('progress').style.width=pct+'%';
-  $('progressText').textContent=total?`${processed}/${total} job (${pct}%)`:'—';
-  $('stats').innerHTML = total
-    ? `⏳ chờ <b>${st.pending||0}</b> · ▶ chạy <b>${st.running||0}</b> · ✅ xong <b>${st.done||0}</b> · ∅ không có <b>${st.notfound||0}</b> · ❌ lỗi <b>${st.error||0}</b> &nbsp;|&nbsp; ${s.links} link trong DB`
-    : `${s.links||0} link trong DB`;
+  $('progressText').textContent=total?`${processed}/${total} job · ${pct}%`:'—';
+  $('statchips').innerHTML = total ? [
+    ['#3b82f6','⏳ chờ',st.pending||0],['#3b82f6','▶ chạy',st.running||0],
+    ['#35c47b','✅ xong',st.done||0],['#e0a52b','∅ không có',st.notfound||0],['#f2545b','❌ lỗi',st.error||0],
+  ].map(([c,l,n])=>`<span class="sc"><span class="d" style="background:${c}"></span>${l} <b>${n}</b></span>`).join('')
+    + `<span class="sc">🗄 <b>${s.links}</b> link trong DB</span>`
+    : `<span class="sc">🗄 <b>${s.links||0}</b> link trong DB</span>`;
   $('log').textContent=(s.logs||[]).join('\n'); $('log').scrollTop=$('log').scrollHeight;
 
   const running=s.phase==='running', none=getSelected().length===0;
-  $('btnEmpty').disabled=running||none; $('btnAll').disabled=running||none;
-  $('btnClear').disabled=running;
+  $('btnEmpty').disabled=running||none; $('btnAll').disabled=running||none; $('btnClear').disabled=running;
   $('btnStop').disabled=!running||s.stopRequested;
   $('btnStop').textContent=(running&&s.stopRequested)?'⏹ Đang dừng...':'⏹ Dừng';
 
-  // Đang chạy -> cập nhật bảng + trạng thái nhanh (2s). Nhàn -> chậm (6s).
-  if (running){ if(!fastPoll){ fastPoll=setInterval(()=>{poll();loadTable();},2000); } }
-  else if (fastPoll){ clearInterval(fastPoll); fastPoll=null; loadTable(); }
+  if(running){ if(!fastPoll) fastPoll=setInterval(()=>{poll();loadTable();},2000); }
+  else if(fastPoll){ clearInterval(fastPoll); fastPoll=null; loadTable(); }
 }
 
 async function run(all){
@@ -260,34 +284,25 @@ $('btnAll').onclick=()=>{ const names=getSelected().map(p=>COLUMNS[PRODUCT_IDS.i
   if(confirm('Ghi đè code mới cho các cột đã chọn ('+names+')?')) run(true); };
 $('btnStop').onclick=async()=>{ if(!confirm('Dừng tool? Các mã đã lấy vẫn giữ.'))return;
   $('btnStop').disabled=true; await fetch('/api/stop',{method:'POST'}); poll(); };
-$('btnClear').onclick=async()=>{ if(!confirm('Dọn toàn bộ hàng đợi?'))return;
-  await fetch('/api/clear-queue',{method:'POST'}); poll(); };
+$('btnClear').onclick=async()=>{ if(!confirm('Dọn toàn bộ hàng đợi?'))return; await fetch('/api/clear-queue',{method:'POST'}); poll(); };
 $('pickAll').onclick=()=>{ document.querySelectorAll('.prod').forEach(c=>c.checked=true); onPickChange(); };
 $('pickNone').onclick=()=>{ document.querySelectorAll('.prod').forEach(c=>c.checked=false); onPickChange(); };
 $('btnReloadTable').onclick=loadTable;
 $('search').oninput=renderTable;
 $('onlyMissing').onchange=renderTable;
-$('btnImport').onclick=async()=>{
-  $('btnImport').disabled=true; $('addResult').textContent='Đang đồng bộ...';
-  try{ const r=await fetch('/api/import',{method:'POST'}).then(x=>x.json());
-    $('addResult').textContent=`Đã đồng bộ: ${r.links} link, ${r.codes} code.`; loadTable(); }
-  catch(e){ $('addResult').textContent='Lỗi: '+e.message; }
-  $('btnImport').disabled=false;
-};
-$('btnAddLinks').onclick=async()=>{
-  const text=$('newLinks').value.trim(); if(!text){ alert('Chưa dán link nào.'); return; }
+$('btnImport').onclick=async()=>{ $('btnImport').disabled=true; $('addResult').textContent='Đang đồng bộ...';
+  try{ const r=await fetch('/api/import',{method:'POST'}).then(x=>x.json()); $('addResult').textContent=`Đã đồng bộ: ${r.links} link, ${r.codes} code.`; loadTable(); }
+  catch(e){ $('addResult').textContent='Lỗi: '+e.message; } $('btnImport').disabled=false; };
+$('btnAddLinks').onclick=async()=>{ const text=$('newLinks').value.trim(); if(!text){ alert('Chưa dán link nào.'); return; }
   $('btnAddLinks').disabled=true;
   try{ const r=await fetch('/api/add-links',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).then(x=>x.json());
     if(r.error) $('addResult').textContent='Lỗi: '+r.error;
     else { $('addResult').textContent=`Đã thêm ${r.added} link`+(r.skipped?`, bỏ ${r.skipped} trùng`:'')+'.'; if(r.added){$('newLinks').value=''; loadTable();} }
-  }catch(e){ $('addResult').textContent='Lỗi: '+e.message; }
-  $('btnAddLinks').disabled=false;
-};
+  }catch(e){ $('addResult').textContent='Lỗi: '+e.message; } $('btnAddLinks').disabled=false; };
 
 try{ const sp=localStorage.getItem('adobe_proxies'); if(sp)$('proxies').value=sp; }catch{}
 $('proxies').addEventListener('change',()=>{ try{localStorage.setItem('adobe_proxies',$('proxies').value);}catch{} });
 
-// Khởi động: reload trang không mất trạng thái (đọc từ server/DB). Poll trạng thái mỗi 3s.
 (async()=>{ await loadInfo(); await loadTable(); await poll(); setInterval(poll,3000); })();
 </script>
 </body>
