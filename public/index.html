@@ -275,8 +275,13 @@ async function run(all){
     body:JSON.stringify({ all, headless:!$('showBrowser').checked, products,
       limit:Number($('limit').value)||0, concurrency:Number($('concurrency').value)||2, proxies:$('proxies').value })});
   if(r.status===409){ alert('Tool đang chạy rồi.'); return; }
-  if(r.status===400){ alert((await r.json()).error||'Lỗi.'); return; }
-  poll();
+  if(r.status===400 || r.status===500){ alert((await r.json()).error||'Lỗi.'); return; }
+  const data = await r.json().catch(()=>({}));
+  if(data.jobs===0){
+    alert(all ? 'Không có sản phẩm nào để ghi.'
+      : 'Tất cả ô đã có code — không có gì để lấy.\nDùng "↻ Chạy lại (ghi đè)" nếu muốn làm mới, hoặc tích "Chỉ link còn thiếu" để kiểm tra.');
+  }
+  poll(); loadTable();
 }
 
 $('btnEmpty').onclick=()=>run(false);

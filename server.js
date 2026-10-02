@@ -89,30 +89,46 @@ app.post('/api/run', async (req, res) => {
   Object.assign(state, {
     phase: 'running', concurrency, logs: [], startedAt: Date.now(), finishedAt: null, error: null,
   });
-  res.json({ ok: true });
 
+  // Chuẩn bị hàng đợi TRƯỚC khi trả lời để báo đúng số job (có/không có việc)
+  let eq;
   try {
     const imp = await importFromSheet();
     pushLog(`Đồng bộ Sheet -> DB: ${imp.links} link, ${imp.codes} code có sẵn.`);
-    const eq = enqueue({ products, all, limit });
+    dbm.clearJobs(); // dọn job cũ -> thống kê chỉ phản ánh lần chạy này
+    eq = enqueue({ products, all, limit });
     const names = products.map((p) => HEADERS[COL_ORDER.indexOf(p)]).join(', ');
     pushLog(`Tạo ${eq.jobs} job cho ${eq.links} link (${all ? 'quét lại' : 'ô trống'}${limit ? `, giới hạn ${limit}` : ''}).`);
     pushLog(`Sản phẩm: ${names} | ${concurrency} luồng | ${proxies.length ? proxies.length + ' proxy' : 'không proxy'}.`);
-    if (eq.jobs === 0) { state.phase = 'done'; state.finishedAt = Date.now(); pushLog('Không có job nào cần chạy.'); return; }
-
-    runner = new Runner({ concurrency, headless, onLog: pushLog, proxies });
-    const r = await runner.start();
-    state.phase = r.stopped ? 'stopped' : 'done';
-    state.finishedAt = Date.now();
-    pushLog(r.stopped ? 'Đã dừng.' : 'Hoàn tất hàng đợi.');
   } catch (e) {
-    state.phase = 'error';
-    state.error = e.message;
-    state.finishedAt = Date.now();
+    state.phase = 'error'; state.error = e.message; state.finishedAt = Date.now();
     pushLog(`LỖI: ${e.message}`);
-  } finally {
-    runner = null;
+    return res.status(500).json({ error: e.message });
   }
+
+  if (eq.jobs === 0) {
+    state.phase = 'done'; state.finishedAt = Date.now();
+    pushLog(all ? 'Không có sản phẩm nào để ghi.' : 'Tất cả ô đã có code — không có gì cần lấy. Dùng "Chạy lại (ghi đè)" nếu muốn làm mới.');
+    return res.json({ ok: true, jobs: 0, all });
+  }
+
+  res.json({ ok: true, jobs: eq.jobs });
+
+  // Chạy nền (không chặn phản hồi)
+  (async () => {
+    try {
+      runner = new Runner({ concurrency, headless, onLog: pushLog, proxies });
+      const r = await runner.start();
+      state.phase = r.stopped ? 'stopped' : 'done';
+      pushLog(r.stopped ? 'Đã dừng.' : 'Hoàn tất hàng đợi.');
+    } catch (e) {
+      state.phase = 'error'; state.error = e.message;
+      pushLog(`LỖI: ${e.message}`);
+    } finally {
+      state.finishedAt = Date.now();
+      runner = null;
+    }
+  })();
 });
 
 app.post('/api/stop', (req, res) => {
